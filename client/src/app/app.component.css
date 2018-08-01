@@ -1,0 +1,10 @@
+.time-col {
+  min-width: 150px;
+}
+.step-col {
+  min-width: 100px;
+}
+
+.build-name {
+  font-size: x-large;
+}

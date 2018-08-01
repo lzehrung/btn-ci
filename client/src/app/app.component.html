@@ -1,0 +1,46 @@
+<!--The content below is only a placeholder and can be replaced.-->
+<div style="text-align:center">
+  <h1>
+    {{ title }} {{ emoji }}
+  </h1>
+</div>
+<h2>Builds:</h2>
+<div *ngFor="let build of builds">
+  <div>
+    <div class="build-name">{{build.buildDef.name}}</div>
+    <ng-container *ngIf="!build.watching">
+      <button type="button" (click)="checkBuild(build.buildDef.name)">Refresh</button>
+    </ng-container>
+    &nbsp;&nbsp;
+    <ng-container *ngIf="!isRunning(build)">
+      <button type="button" (click)="startBuild(build.buildDef.name)">Start</button>
+    </ng-container>
+    <ng-container *ngIf="isRunning(build)">
+      <button type="button" (click)="cancelBuild(build.buildDef.name)">Cancel</button>
+    </ng-container>
+  </div>
+  <ng-container *ngIf="build.latestRun">
+    <div>
+      <h3>Latest Build</h3>
+      <h4>{{build.latestRun.lastUpdated | date:'h:mm a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
+      <table>
+        <thead>
+          <tr>
+            <td class="time-col">Time</td>
+            <td class="step-col">Step</td>
+            <td>Message</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let line of build.latestRun.log">
+            <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm a'}}</td>
+            <td class="step-col">{{line.command}}</td>
+            <td>
+              <pre>{{line.message}}</pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>
