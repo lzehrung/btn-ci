@@ -80,7 +80,7 @@ function BuildManager(configDir) {
 
   self.loadBuildDefFile = (fileName) => {
     var filePath = path.join(configDir, fileName);
-    console.log(`loading build def: ${filePath}`);    
+    console.log(`loading build def: ${filePath}`);
     var configFile = fs.readFileSync(filePath);
     var buildDef = JSON.parse(configFile);
 
@@ -127,7 +127,11 @@ function BuildManager(configDir) {
         }
       }
     }
-    return self.mostRecentLog(buildName);
+    var mostRecent = self.mostRecentLog(buildName);
+    mostRecent.result = BuildStatus.Cancelled;
+    buildResult.lastUpdated = new Date().toJSON();
+    mostRecent.log.push(new LogLine('--------------'));
+    mostRecent.log.push(new LogLine(`Build was cancelled 🤨`));
   };
 
   self.startBuild = (buildDef) => {
@@ -183,8 +187,9 @@ function BuildManager(configDir) {
         // fail build on error
         buildResult.result = BuildStatus.Failed;
         buildResult.lastUpdated = new Date().toJSON();
-        buildResult.log.push(new LogLine('--------------'));
-        buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription}): ${JSON.stringify(error, null, 2)}`));
+        buildResult.log.push(
+          new LogLine(`Step ${index} command error  🚨 (${stepDescription}): ${JSON.stringify(error, null, 2)}`)
+        );
       }
     });
 
@@ -197,16 +202,39 @@ function BuildManager(configDir) {
           buildResult.log.push(new LogLine('--------------'));
           buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription})`));
         } else {
+          var failedStepLogs = null;
+          if (step.failText) {
+            var failReg = new RegExp(step.failText, 'gm');
+            failedStepLogs = buildResult.log.filter((item) => {
+              var matches = failReg.exec(item.message);
+              return !!matches && matches.length >= 2 && !!matches[1];
+            });
+          }
+          var unstableStepLogs = null;
+          if (step.unstableText) {
+            var unstableReg = new RegExp(step.unstableText, 'gm');
+            unstableStepLogs = buildResult.log.filter((item) => {
+              var matches = unstableReg.exec(item.message);
+              return !!matches && matches.length >= 2 && !!matches[1];
+            });
+          }
+
           // if this step's fail text is found, fail build
-          var failedStepLogs = buildResult.log.filter((item) => {
-            return item.command == stepId && item.message.indexOf(step.failText) !== -1;
-          });
           if (!!failedStepLogs && failedStepLogs.length > 0) {
             buildResult.result = BuildStatus.Failed;
             buildResult.lastUpdated = new Date().toJSON();
             buildResult.log.push(new LogLine('--------------'));
             buildResult.log.push(
               new LogLine(`Failure text condition was met on step ${index} 😭 (${stepDescription})`)
+            );
+          }
+          // if this step's unstable text is found, mark build unstable
+          else if (!!unstableStepLogs && failedStepLogs.length > 0) {
+            buildResult.result = BuildStatus.Unstable;
+            buildResult.lastUpdated = new Date().toJSON();
+            buildResult.log.push(new LogLine('--------------'));
+            buildResult.log.push(
+              new LogLine(`Unstable text condition was met on step ${index} 🤔 (${stepDescription})`)
             );
           }
           // if there's another step, run it
