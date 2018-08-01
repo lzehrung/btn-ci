@@ -8,3 +8,7 @@
 .build-name {
   font-size: x-large;
 }
+
+.table-header {
+  font-weight: bold;
+}
