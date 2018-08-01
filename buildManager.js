@@ -234,7 +234,7 @@ function BuildManager(configDir) {
             );
           }
           // if this step's unstable text is found, mark build unstable
-          else if (!!unstableStepLogs && failedStepLogs.length > 0) {
+          else if (!!unstableStepLogs && unstableStepLogs.length > 0) {
             buildResult.result = BuildStatus.Unstable;
             buildResult.lastUpdated = new Date().toJSON();
             buildResult.log.push(new LogLine('--------------'));
