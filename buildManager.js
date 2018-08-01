@@ -51,7 +51,7 @@ function BuildManager(configDir) {
     if (!!self.buildLogs) {
       var buildLog = self.buildLogs
         .sort((logA, logB) => {
-          return new Date(logA.lastUpdated) <= new Date(logB.lastUpdated);
+          return new Date(logA.lastUpdated) >= new Date(logB.lastUpdated);
         })
         .filter((log) => {
           return log.name == buildName;
