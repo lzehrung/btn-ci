@@ -165,7 +165,7 @@ function BuildManager(logDir) {
             );
           }
           // if there's another step, run it
-          else if (buildDef.steps.length - 1 > index + 1) {
+          else if (index + 1 < buildDef.steps.length) {
             self.executeBuildStep(index + 1, buildDef, buildResult);
           } else {
             // we succeeded!
