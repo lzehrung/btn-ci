@@ -7,7 +7,7 @@ const { BuildStatus } = require('./models');
 const appName = 'BetterThanNothingCI';
 const port = 3000;
 const configDir = process.cwd() + '/definitions';
-const buildMgr = new BuildManager();
+const buildMgr = new BuildManager(configDir);
 buildMgr.load(configDir);
 
 app.set('views', process.cwd() + '/views');

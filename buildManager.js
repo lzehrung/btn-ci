@@ -12,10 +12,11 @@ function BuildProcess(buildName, process) {
   self.process = process;
 }
 
-function BuildManager(logDir) {
+function BuildManager(configDir) {
   var self = this;
 
   self.configs = [];
+  self.configFiles = [];
   self.scheduledBuilds = [];
   self.buildLogs = [];
   self.buildProcesses = [];
@@ -29,6 +30,16 @@ function BuildManager(logDir) {
   self.findBuildDef = (buildName) => {
     var matching = self.configs.filter((def) => {
       return def.name == buildName;
+    });
+    if (!!matching) {
+      return matching[0];
+    }
+    return null;
+  };
+
+  self.findBuildDefFile = (buildName) => {
+    var matching = self.configFiles.filter((file) => {
+      return file.buildName == buildName;
     });
     if (!!matching) {
       return matching[0];
@@ -50,22 +61,38 @@ function BuildManager(logDir) {
     return null;
   };
 
-  self.load = (configDir) => {
+  self.load = () => {
+    self.configFiles = [];
     self.configs = [];
 
     var configFiles = fs.readdirSync(configDir).filter((file) => {
       return file.endsWith('.json');
     });
     for (var fileName of configFiles) {
-      console.log(`loading build def: ${fileName}`);
-      var filePath = path.join(configDir, fileName);
-      var configFile = fs.readFileSync(filePath);
-      var buildDef = JSON.parse(configFile);
+      var buildDef = self.loadBuildDefFile(fileName);
 
-      if (buildDef.name && buildDef.steps && buildDef.directory) {
+      self.configFiles.push({
+        fileName: fileName,
+        buildName: buildDef.name
+      });
+    }
+  };
+
+  self.loadBuildDefFile = (fileName) => {
+    var filePath = path.join(configDir, fileName);
+    console.log(`loading build def: ${filePath}`);    
+    var configFile = fs.readFileSync(filePath);
+    var buildDef = JSON.parse(configFile);
+
+    if (buildDef.name && buildDef.steps && buildDef.directory) {
+      var existingDef = self.findBuildDef(buildDef.name);
+      if (!!existingDef) {
+        existingDef = buildDef;
+      } else {
         self.configs.push(buildDef);
       }
     }
+    return buildDef;
   };
 
   self.scheduleBuilds = () => {
@@ -108,10 +135,18 @@ function BuildManager(logDir) {
     if (!!latestRun && latestRun.result == BuildStatus.Running) {
       return;
     }
+    // reload build def from file in case steps have changed
+    var buildDefFile = self.findBuildDefFile(buildDef.name);
+    if (!!buildDefFile) {
+      buildDef = self.loadBuildDefFile(buildDefFile.fileName);
+    }
+
+    // start build
     var result = new BuildResult(buildDef.name, buildDef);
     result.log.push(new LogLine(`Starting build ${buildDef.name}...`));
     self.buildLogs.push(result);
     self.executeBuildStep(0, buildDef, result);
+
     return result;
   };
 
@@ -138,10 +173,20 @@ function BuildManager(logDir) {
       buildResult.log.push(new LogLine('--------------'));
       buildResult.log.push(
         new LogLine(
-          `Step ${index} command failed 😭 (${stepDescription}): ${error != null ? JSON.stringify(error) : ''}`
+          `Step ${index} command failed 😭 (${stepDescription}): ${error != null ? JSON.stringify(error, null, 2) : ''}`
         )
       );
     }
+
+    proc.on('error', (error) => {
+      if (buildResult.result != BuildStatus.Cancelled) {
+        // fail build on error
+        buildResult.result = BuildStatus.Failed;
+        buildResult.lastUpdated = new Date().toJSON();
+        buildResult.log.push(new LogLine('--------------'));
+        buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription}): ${JSON.stringify(error, null, 2)}`));
+      }
+    });
 
     proc.on('close', (exitCode) => {
       if (buildResult.result != BuildStatus.Cancelled) {
