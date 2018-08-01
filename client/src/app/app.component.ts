@@ -38,12 +38,17 @@ export class AppComponent implements OnInit {
   startBuild(buildName: string): void {
     let buildInfo = this.findBuild(buildName);
     if (!!buildInfo) {
-      this.buildService.startBuild(buildName).subscribe((result: IBuildResult) => {
-        let buildInfo = this.findBuild(buildName);
-        buildInfo.latestRun = result;
-        // build started, now we can watch for its logs
-        this.checkBuild(buildName);
-      });
+      this.buildService.startBuild(buildName).subscribe(
+        (result: IBuildResult) => {
+          let buildInfo = this.findBuild(buildName);
+          buildInfo.latestRun = result;
+          // build started, now we can watch for its logs
+          this.checkBuild(buildName);
+        },
+        () => {
+          window.location.reload();
+        }
+      );
     }
   }
 
@@ -60,22 +65,27 @@ export class AppComponent implements OnInit {
   checkBuild(buildName: string): void {
     let buildInfo = this.findBuild(buildName);
     if (!!buildInfo) {
-      this.buildService.checkBuild(buildName).subscribe((buildResult: IBuildInfo) => {
-        if (!!buildResult) {
-          let buildInfo = this.findBuild(buildName);
-          buildInfo.latestRun = buildResult.latestRun;
-          if (buildInfo.latestRun.result == 'Running') {
-            // still running, check again in a few seconds
-            setTimeout(() => {
-              this.checkBuild(buildName);
-            }, 2000);
+      this.buildService.checkBuild(buildName).subscribe(
+        (buildResult: IBuildInfo) => {
+          if (!!buildResult) {
+            let buildInfo = this.findBuild(buildName);
+            buildInfo.latestRun = buildResult.latestRun;
+            if (buildInfo.latestRun.result == 'Running') {
+              // still running, check again in a few seconds
+              setTimeout(() => {
+                this.checkBuild(buildName);
+              }, 2000);
+            } else {
+              buildInfo.watching = false;
+            }
           } else {
             buildInfo.watching = false;
           }
-        } else {
-          buildInfo.watching = false;
+        },
+        () => {
+          window.location.reload();
         }
-      });
+      );
     }
   }
 
