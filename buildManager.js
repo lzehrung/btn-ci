@@ -12,7 +12,7 @@ function BuildProcess(buildName, process) {
   self.process = process;
 }
 
-function BuildManager(configDir) {
+function BuildManager(configDir, logDir) {
   var self = this;
 
   self.configs = [];
@@ -100,7 +100,7 @@ function BuildManager(configDir) {
       if (buildDef.schedule) {
         var job = schedule.scheduleJob(buildDef.schedule, () => {
           var latest = self.mostRecentLog(buildDef.name);
-          if (!latest || !!latest && latest.result != BuildStatus.Running) {
+          if (!latest || (!!latest && latest.result != BuildStatus.Running)) {
             self.startBuild(buildDef);
           }
         });
@@ -206,6 +206,7 @@ function BuildManager(configDir) {
           buildResult.lastUpdated = new Date().toJSON();
           buildResult.log.push(new LogLine('--------------'));
           buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription})`));
+          this.writeLogFile(buildDef, buildResult);
         } else {
           var failedStepLogs = null;
           if (step.failText) {
@@ -232,6 +233,7 @@ function BuildManager(configDir) {
             buildResult.log.push(
               new LogLine(`Failure text condition was met on step ${index} 😭 (${stepDescription})`)
             );
+            this.writeLogFile(buildDef, buildResult);
           }
           // if this step's unstable text is found, mark build unstable
           else if (!!unstableStepLogs && unstableStepLogs.length > 0) {
@@ -241,6 +243,7 @@ function BuildManager(configDir) {
             buildResult.log.push(
               new LogLine(`Unstable text condition was met on step ${index} 🤔 (${stepDescription})`)
             );
+            this.writeLogFile(buildDef, buildResult);
           }
           // if there's another step, run it
           else if (index + 1 < buildDef.steps.length) {
@@ -251,6 +254,7 @@ function BuildManager(configDir) {
             buildResult.lastUpdated = new Date().toJSON();
             buildResult.log.push(new LogLine('--------------'));
             buildResult.log.push(new LogLine(`Build completed successfully! 😀👍`));
+            this.writeLogFile(buildDef, buildResult);
           }
         }
       }
@@ -267,7 +271,16 @@ function BuildManager(configDir) {
       });
   };
 
-  self.writeLogFile = (buildDef, buildResult) => {};
+  self.writeLogFile = (buildDef, buildResult) => {
+    var last = new Date(buildResult.lastUpdated);
+    var logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() + 1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
+    var contents = JSON.stringify(buildResult, null, 2);
+    fs.writeFile(path.join(logDir, logFileName), contents, { encoding: 'utf8' }, (err) => {
+      if (err) {
+        console.log('error saving log file', err);
+      }
+    });
+  };
 }
 
 module.exports = BuildManager;
