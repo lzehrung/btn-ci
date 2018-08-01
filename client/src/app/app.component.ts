@@ -23,6 +23,21 @@ export class AppComponent implements OnInit {
     const emoji = this.homePageEmojis[emojiIndex];
     this.emoji = emoji;
 
+    this.loadBuilds();
+
+    // try to refresh the builds every 30 seconds
+    setInterval(() => {
+      var watched = this.builds.filter((build) => {
+        return build.watching;
+      });
+      // if no builds are currently watched, reload the builds
+      if (!watched || watched.length < 1) {
+        this.loadBuilds();
+      }
+    }, 30000);
+  }
+
+  loadBuilds(): void {
     this.buildService.getBuilds().subscribe((builds) => {
       this.builds = builds;
       for (let build of this.builds) {

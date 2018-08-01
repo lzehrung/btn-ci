@@ -97,10 +97,15 @@ function BuildManager(configDir) {
 
   self.scheduleBuilds = () => {
     for (var buildDef of self.configs) {
-      var job = schedule.scheduledJob(buildDef.schedule, () => {
-        self.startBuild(buildDef);
-      });
-      self.scheduledBuilds.push(job);
+      if (buildDef.schedule) {
+        var job = schedule.scheduleJob(buildDef.schedule, () => {
+          var latest = self.mostRecentLog(buildDef.name);
+          if (!latest || !!latest && latest.result != BuildStatus.Running) {
+            self.startBuild(buildDef);
+          }
+        });
+        self.scheduledBuilds.push(job);
+      }
     }
   };
 

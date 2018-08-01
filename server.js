@@ -95,4 +95,7 @@ app.post('/cancel/:buildName', (req, res) => {
   }
 });
 
+console.log('scheduling builds...');
+buildMgr.scheduleBuilds();
+
 app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));
