@@ -69,12 +69,19 @@ function BuildManager(logDir) {
   };
 
   self.scheduleBuilds = () => {
-    for (var config of self.configs) {
-      var job = schedule.scheduledJob(config.schedule, () => {
-        self.startBuild(config);
+    for (var buildDef of self.configs) {
+      var job = schedule.scheduledJob(buildDef.schedule, () => {
+        self.startBuild(buildDef);
       });
       self.scheduledBuilds.push(job);
     }
+  };
+
+  self.cancelScheduledBuilds = () => {
+    for (var job of self.scheduledBuilds) {
+      schedule.cancelJob(job);
+    }
+    self.scheduledBuilds = [];
   };
 
   self.cancelBuild = (buildName) => {
@@ -96,14 +103,11 @@ function BuildManager(logDir) {
     return self.mostRecentLog(buildName);
   };
 
-  self.cancelScheduledBuilds = () => {
-    for (var job of self.scheduledBuilds) {
-      schedule.cancelJob(job);
-    }
-    self.scheduledBuilds = [];
-  };
-
   self.startBuild = (buildDef) => {
+    var latestRun = self.mostRecentLog(buildDef.name);
+    if (!!latestRun && latestRun.result == BuildStatus.Running) {
+      return;
+    }
     var result = new BuildResult(buildDef.name, buildDef);
     result.log.push(new LogLine(`Starting build ${buildDef.name}...`));
     self.buildLogs.push(result);

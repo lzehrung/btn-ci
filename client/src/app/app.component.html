@@ -22,7 +22,7 @@
   <ng-container *ngIf="build.latestRun">
     <div>
       <h3>Latest Build</h3>
-      <h4>{{build.latestRun.lastUpdated | date:'h:mm a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
+      <h4>{{build.latestRun.lastUpdated | date:'h:mm:ss a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
       <table>
         <thead>
           <tr>
@@ -33,7 +33,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let line of build.latestRun.log">
-            <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm a'}}</td>
+            <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm:ss a'}}</td>
             <td class="step-col">{{line.command}}</td>
             <td>
               <pre>{{line.message}}</pre>
