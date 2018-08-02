@@ -146,11 +146,13 @@ function BuildManager(configDir, logDir) {
         }
       }
     }
-    var mostRecent = self.mostRecentLog(buildName);
-    mostRecent.result = BuildStatus.Cancelled;
-    buildResult.lastUpdated = new Date().toJSON();
-    mostRecent.log.push(new LogLine('--------------'));
-    mostRecent.log.push(new LogLine(`Build was cancelled 🤨`));
+    var buildResult = self.mostRecentLog(buildName);
+    if (!!buildResult) {
+      buildResult.result = BuildStatus.Cancelled;
+      buildResult.lastUpdated = new Date().toJSON();
+      buildResult.log.push(new LogLine('--------------'));
+      buildResult.log.push(new LogLine(`Build was cancelled 🤨`));
+    }
   };
 
   self.startBuild = (buildDef) => {
