@@ -17,8 +17,6 @@ function BuildManager(configDir, logDir) {
   var self = this;
 
   self.sendGridKey = null;
-  const emailFrom = 'btn-ci@vibehcm.com';
-  const emailTo = 'nerfherders@vibehcm.com';
 
   self.configs = [];
   self.configFiles = [];
@@ -261,9 +259,7 @@ function BuildManager(configDir, logDir) {
 
           if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
             self.sendEmail(
-              emailFrom,
-              emailTo,
-              `${buildDef.name} CI Build Failed 😭`,
+              `${buildDef.name} Build Failed 😭`,
               `<h2>Build Log</h2><pre>${JSON.stringify(buildResult, null, 2)}</pre>`
             );
           }
@@ -324,14 +320,14 @@ function BuildManager(configDir, logDir) {
     fs.mkdirSync(dirname);
   }
 
-  self.sendEmail = (from, to, subject, htmlMessage) => {
-    if (!!self.sendGridKey) {
+  self.sendEmail = (subject, htmlMessage) => {
+    if (!!self.sendGridKey && !!buildDef.emailTo) {
       console.log('sending email...');
       try {
         sgMail.setApiKey(seld.sendGridKey);
         const msg = {
-          to: to,
-          from: from,
+          to: buildDef.emailTo,
+          from: !!buildDef.emailFrom ? buildDef.emailFrom : 'btn-ci@internetland.org',
           subject: subject,
           html: htmlMessage
         };
