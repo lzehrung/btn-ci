@@ -261,6 +261,7 @@ function BuildManager(configDir, logDir) {
 
           if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
             self.sendEmail(
+              buildDef,
               `${buildDef.name} Build Failed 😭`,
               `<h2>Build Log</h2><pre>${JSON.stringify(buildResult, null, 2)}</pre>`
             );
@@ -322,7 +323,7 @@ function BuildManager(configDir, logDir) {
     fs.mkdirSync(dirname);
   }
 
-  self.sendEmail = (subject, htmlMessage) => {
+  self.sendEmail = (buildDef, subject, htmlMessage) => {
     if (!!self.sendGridKey && !!buildDef.emailTo) {
       console.log('sending email...');
       try {
