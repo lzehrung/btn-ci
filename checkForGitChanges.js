@@ -4,10 +4,27 @@ const execSync = require('child_process').execSync;
 const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commits', 'gm');
 
 module.exports.isBehind = function(directory) {
-  var status = execSync('git status', {
-    cwd: directory
-  });
-  var commitsBehind = isBehindRegEx.exec(status)[1];
+  var commitsBehind = 0;
+
+  try {
+    // update remote repo info
+    execSync('git remote update', {
+      cwd: directory
+    });
+
+    // get local status
+    var status = execSync('git status', {
+      cwd: directory
+    });
+
+    // check status for 'behind by N commits'
+    if (!!status) {
+      commitsBehind = isBehindRegEx.exec(status)[1];
+    }
+  } catch (error) {
+    console.log('error updating git repo to check for new changes');
+  }
+
   if (commitsBehind && !isNaN(commitsBehind)) {
     return true;
   } else {
