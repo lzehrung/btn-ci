@@ -57,7 +57,7 @@ app.post('/start/:buildName', (req, res) => {
   if (!!buildDef) {
     var latest = buildMgr.mostRecentLog(req.params.buildName);
     if (!latest || latest.result != BuildStatus.Running) {
-      latest = buildMgr.startBuild(buildDef);
+      latest = buildMgr.startBuild(buildDef, true);
       res.json({
         buildDef: buildDef,
         latestRun: latest

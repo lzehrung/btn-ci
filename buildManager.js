@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const schedule = require('node-schedule');
-//const { spawn } = require('child_process');
 const spawn = require('cross-spawn');
 const readline = require('readline');
 const sgMail = require('@sendgrid/mail');
+const isBehindGit = require('./checkForGitChanges').isBehind;
 const { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep } = require('./models');
 
 function BuildProcess(buildName, process) {
@@ -155,7 +155,7 @@ function BuildManager(configDir, logDir) {
     }
   };
 
-  self.startBuild = (buildDef) => {
+  self.startBuild = (buildDef, force) => {
     var latestRun = self.mostRecentLog(buildDef.name);
     if (!!latestRun && latestRun.result == BuildStatus.Running) {
       return;
@@ -166,12 +166,23 @@ function BuildManager(configDir, logDir) {
       buildDef = self.loadBuildDefFile(buildDefFile.fileName);
     }
 
-    // start build
-    var result = new BuildResult(buildDef.name, buildDef);
-    result.log.push(new LogLine(`Starting build ${buildDef.name}...`));
-    self.buildLogs.push(result);
-    self.executeBuildStep(0, buildDef, result);
+    // if the build def specifies that it should only run when there are changes, check (git) if repo is behind changes
+    var isBehind = true;
+    if (!!buildDef.onlyRunForChanges) {
+      isBehind = isBehindGit(buildDef.directory);
+    }
 
+    // run if forcing a build (ie from 'start' button on client) or if behind
+    var shouldRun = !!force || isBehind;
+    var result = null;
+    if (shouldRun) {
+      // start build
+      console.log(`starting build: ${buildDef.name}`);
+      result = new BuildResult(buildDef.name, buildDef);
+      result.log.push(new LogLine(`Starting build ${buildDef.name}...`));
+      self.buildLogs.push(result);
+      self.executeBuildStep(0, buildDef, result);
+    }
     return result;
   };
 
