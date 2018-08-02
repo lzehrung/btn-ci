@@ -4,6 +4,7 @@ const schedule = require('node-schedule');
 //const { spawn } = require('child_process');
 const spawn = require('cross-spawn');
 const readline = require('readline');
+const sgMail = require('@sendgrid/mail');
 const { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep } = require('./models');
 
 function BuildProcess(buildName, process) {
@@ -14,6 +15,10 @@ function BuildProcess(buildName, process) {
 
 function BuildManager(configDir, logDir) {
   var self = this;
+
+  self.sendGridKey = null;
+  const emailFrom = 'btn-ci@vibehcm.com';
+  const emailTo = 'nerfherders@vibehcm.com';
 
   self.configs = [];
   self.configFiles = [];
@@ -69,6 +74,12 @@ function BuildManager(configDir, logDir) {
   self.load = () => {
     self.configFiles = [];
     self.configs = [];
+
+    try {
+      self.sendGridKey = JSON.parse(fs.readFileSync('sendgrid-key.json')).key;
+    } catch (err) {
+      console.log('failed to load sendgrid api key, unable to send emails.');
+    }
 
     var configFiles = fs.readdirSync(configDir).filter((file) => {
       return file.endsWith('.json');
@@ -180,8 +191,100 @@ function BuildManager(configDir, logDir) {
       });
       // add to our build process list for cancellation later
       self.buildProcesses.push(new BuildProcess(buildDef.name, proc));
+
+      proc.on('error', (error) => {
+        if (buildResult.result != BuildStatus.Cancelled) {
+          // fail build on error
+          buildResult.result = BuildStatus.Failed;
+          buildResult.lastUpdated = new Date().toJSON();
+          buildResult.log.push(
+            new LogLine(`Step ${index} command error  🚨 (${stepDescription}): ${JSON.stringify(error, null, 2)}`)
+          );
+        }
+      });
+
+      proc.on('close', (exitCode) => {
+        if (buildResult.result != BuildStatus.Cancelled) {
+          if (exitCode !== 0) {
+            // command exited with non-success code, fail build
+            buildResult.result = BuildStatus.Failed;
+            buildResult.lastUpdated = new Date().toJSON();
+            buildResult.log.push(new LogLine('--------------'));
+            buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription})`));
+          } else {
+            var failedStepLogs = null;
+            if (step.failText) {
+              var failReg = new RegExp(step.failText, 'gm');
+              failedStepLogs = buildResult.log.filter((item) => {
+                var matches = failReg.exec(item.message);
+                return !!matches && matches.length >= 2 && !!matches[1];
+              });
+            }
+            var unstableStepLogs = null;
+            if (step.unstableText) {
+              var unstableReg = new RegExp(step.unstableText, 'gm');
+              unstableStepLogs = buildResult.log.filter((item) => {
+                var matches = unstableReg.exec(item.message);
+                return !!matches && matches.length >= 2 && !!matches[1];
+              });
+            }
+
+            // if this step's fail text is found, fail build
+            if (!!failedStepLogs && failedStepLogs.length > 0) {
+              buildResult.result = BuildStatus.Failed;
+              buildResult.lastUpdated = new Date().toJSON();
+              buildResult.log.push(new LogLine('--------------'));
+              buildResult.log.push(
+                new LogLine(`Failure text condition was met on step ${index} 😭 (${stepDescription})`)
+              );
+            }
+            // if this step's unstable text is found, mark build unstable
+            else if (!!unstableStepLogs && unstableStepLogs.length > 0) {
+              buildResult.result = BuildStatus.Unstable;
+              buildResult.lastUpdated = new Date().toJSON();
+              buildResult.log.push(new LogLine('--------------'));
+              buildResult.log.push(
+                new LogLine(`Unstable text condition was met on step ${index} 🤔 (${stepDescription})`)
+              );
+            }
+            // if there's another step, run it
+            else if (index + 1 < buildDef.steps.length) {
+              self.executeBuildStep(index + 1, buildDef, buildResult);
+            } else {
+              // we succeeded!
+              buildResult.result = BuildStatus.Success;
+              buildResult.lastUpdated = new Date().toJSON();
+              buildResult.log.push(new LogLine('--------------'));
+              buildResult.log.push(new LogLine(`Build completed successfully! 😀👍`));
+            }
+          }
+
+          if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
+            self.sendEmail(
+              emailFrom,
+              emailTo,
+              `${buildDef.name} CI Build Failed 😭`,
+              `<h2>Build Log</h2><pre>${JSON.stringify(buildResult, null, 2)}</pre>`
+            );
+          }
+
+          if (buildResult.result != BuildStatus.Running) {
+            this.writeLogFile(buildDef, buildResult);
+          }
+        }
+      });
+
+      readline
+        .createInterface({
+          input: proc.stdout,
+          terminal: false
+        })
+        .on('line', (line) => {
+          buildResult.lastUpdated = new Date().toJSON();
+          buildResult.log.push(new LogLine(line));
+        });
     } catch (error) {
-      // exception trying to run the command, fail build
+      // exception somewhere, fail build
       buildResult.result = BuildStatus.Failed;
       buildResult.lastUpdated = new Date().toJSON();
       buildResult.log.push(new LogLine('--------------'));
@@ -190,102 +293,53 @@ function BuildManager(configDir, logDir) {
           `Step ${index} command failed 😭 (${stepDescription}): ${error != null ? JSON.stringify(error, null, 2) : ''}`
         )
       );
+      this.writeLogFile(buildDef, buildResult);
     }
-
-    proc.on('error', (error) => {
-      if (buildResult.result != BuildStatus.Cancelled) {
-        // fail build on error
-        buildResult.result = BuildStatus.Failed;
-        buildResult.lastUpdated = new Date().toJSON();
-        buildResult.log.push(
-          new LogLine(`Step ${index} command error  🚨 (${stepDescription}): ${JSON.stringify(error, null, 2)}`)
-        );
-      }
-    });
-
-    proc.on('close', (exitCode) => {
-      if (buildResult.result != BuildStatus.Cancelled) {
-        if (exitCode !== 0) {
-          // command exited with non-success code, fail build
-          buildResult.result = BuildStatus.Failed;
-          buildResult.lastUpdated = new Date().toJSON();
-          buildResult.log.push(new LogLine('--------------'));
-          buildResult.log.push(new LogLine(`Step ${index} command failed 😭 (${stepDescription})`));
-          this.writeLogFile(buildDef, buildResult);
-        } else {
-          var failedStepLogs = null;
-          if (step.failText) {
-            var failReg = new RegExp(step.failText, 'gm');
-            failedStepLogs = buildResult.log.filter((item) => {
-              var matches = failReg.exec(item.message);
-              return !!matches && matches.length >= 2 && !!matches[1];
-            });
-          }
-          var unstableStepLogs = null;
-          if (step.unstableText) {
-            var unstableReg = new RegExp(step.unstableText, 'gm');
-            unstableStepLogs = buildResult.log.filter((item) => {
-              var matches = unstableReg.exec(item.message);
-              return !!matches && matches.length >= 2 && !!matches[1];
-            });
-          }
-
-          // if this step's fail text is found, fail build
-          if (!!failedStepLogs && failedStepLogs.length > 0) {
-            buildResult.result = BuildStatus.Failed;
-            buildResult.lastUpdated = new Date().toJSON();
-            buildResult.log.push(new LogLine('--------------'));
-            buildResult.log.push(
-              new LogLine(`Failure text condition was met on step ${index} 😭 (${stepDescription})`)
-            );
-            this.writeLogFile(buildDef, buildResult);
-          }
-          // if this step's unstable text is found, mark build unstable
-          else if (!!unstableStepLogs && unstableStepLogs.length > 0) {
-            buildResult.result = BuildStatus.Unstable;
-            buildResult.lastUpdated = new Date().toJSON();
-            buildResult.log.push(new LogLine('--------------'));
-            buildResult.log.push(
-              new LogLine(`Unstable text condition was met on step ${index} 🤔 (${stepDescription})`)
-            );
-            this.writeLogFile(buildDef, buildResult);
-          }
-          // if there's another step, run it
-          else if (index + 1 < buildDef.steps.length) {
-            self.executeBuildStep(index + 1, buildDef, buildResult);
-          } else {
-            // we succeeded!
-            buildResult.result = BuildStatus.Success;
-            buildResult.lastUpdated = new Date().toJSON();
-            buildResult.log.push(new LogLine('--------------'));
-            buildResult.log.push(new LogLine(`Build completed successfully! 😀👍`));
-            this.writeLogFile(buildDef, buildResult);
-          }
-        }
-      }
-    });
-
-    readline
-      .createInterface({
-        input: proc.stdout,
-        terminal: false
-      })
-      .on('line', (line) => {
-        buildResult.lastUpdated = new Date().toJSON();
-        buildResult.log.push(new LogLine(line));
-      });
   };
 
   self.writeLogFile = (buildDef, buildResult) => {
-    var last = new Date(buildResult.lastUpdated);
-    var logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
-      1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
-    var contents = JSON.stringify(buildResult, null, 2);
-    fs.writeFile(path.join(logDir, logFileName), contents, { encoding: 'utf8' }, (err) => {
-      if (err) {
-        console.log('error saving log file', err);
+    try {
+      var last = new Date(buildResult.lastUpdated);
+      var logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
+        1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
+      var contents = JSON.stringify(buildResult, null, 2);
+      var logFilePath = path.join(logDir, logFileName);
+      ensureDirectoryExistence(logFilePath);
+      fs.writeFile(logFilePath, contents, { encoding: 'utf8' }, (err) => {
+        if (err) {
+          console.log('error saving log file', err);
+        }
+      });
+    } catch (err) {
+      console.log('failed to write log file', err);
+    }
+  };
+
+  function ensureDirectoryExistence(filePath) {
+    var dirname = path.dirname(filePath);
+    if (fs.existsSync(dirname)) {
+      return true;
+    }
+    ensureDirectoryExistence(dirname);
+    fs.mkdirSync(dirname);
+  }
+
+  self.sendEmail = (from, to, subject, htmlMessage) => {
+    if (!!self.sendGridKey) {
+      console.log('sending email...');
+      try {
+        sgMail.setApiKey(seld.sendGridKey);
+        const msg = {
+          to: to,
+          from: from,
+          subject: subject,
+          html: htmlMessage
+        };
+        sgMail.send(msg);
+      } catch (err) {
+        console.log('failed to send email', err);
       }
-    });
+    }
   };
 }
 
