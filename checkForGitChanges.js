@@ -3,7 +3,7 @@ const execSync = require('child_process').execSync;
 // https://regex101.com/r/P463Ja/1
 const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commit', 'gm');
 
-module.exports.isBehind = function(directory) {
+module.exports.isBehind = function (directory) {
   var commitsBehind = 0;
 
   try {
@@ -19,7 +19,10 @@ module.exports.isBehind = function(directory) {
 
     // check status for 'behind by N commits'
     if (!!status) {
-      commitsBehind = isBehindRegEx.exec(status)[1];
+      var matches = isBehindRegEx.exec(status);
+      if (!!matches && matches.length >= 2) {
+        commitsBehind = matches[1];
+      }
     }
   } catch (error) {
     console.log('error updating git repo to check for new changes', error);
