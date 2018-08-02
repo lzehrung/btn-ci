@@ -48,17 +48,22 @@ function BuildManager(configDir, logDir) {
   };
 
   self.mostRecentLog = (buildName) => {
+    var mostRecentLog = null;
     if (!!self.buildLogs) {
-      var buildLog = self.buildLogs
-        .sort((logA, logB) => {
-          return new Date(logA.lastUpdated) >= new Date(logB.lastUpdated);
-        })
+      var filteredLogs = self.buildLogs
         .filter((log) => {
           return log.name == buildName;
-        })[0];
-      return buildLog;
+        })
+        .sort((logA, logB) => {
+          var dateA = new Date(logA.lastUpdated);
+          var dateB = new Date(logB.lastUpdated);
+          return dateB - dateA;
+        });
+      if (!!filteredLogs) {
+        mostRecentLog = filteredLogs[0];
+      }
     }
-    return null;
+    return mostRecentLog;
   };
 
   self.load = () => {
@@ -273,7 +278,8 @@ function BuildManager(configDir, logDir) {
 
   self.writeLogFile = (buildDef, buildResult) => {
     var last = new Date(buildResult.lastUpdated);
-    var logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() + 1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
+    var logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
+      1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
     var contents = JSON.stringify(buildResult, null, 2);
     fs.writeFile(path.join(logDir, logFileName), contents, { encoding: 'utf8' }, (err) => {
       if (err) {
