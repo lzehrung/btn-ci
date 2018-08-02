@@ -327,7 +327,7 @@ function BuildManager(configDir, logDir) {
     if (!!self.sendGridKey && !!buildDef.emailTo) {
       console.log('sending email...');
       try {
-        sgMail.setApiKey(seld.sendGridKey);
+        sgMail.setApiKey(self.sendGridKey);
         const msg = {
           to: buildDef.emailTo,
           from: !!buildDef.emailFrom ? buildDef.emailFrom : 'btn-ci@internetland.org',
