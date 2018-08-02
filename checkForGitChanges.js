@@ -1,7 +1,7 @@
 const execSync = require('child_process').execSync;
 
 // https://regex101.com/r/P463Ja/1
-const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commits', 'gm');
+const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commit', 'gm');
 
 module.exports.isBehind = function(directory) {
   var commitsBehind = 0;
@@ -22,7 +22,9 @@ module.exports.isBehind = function(directory) {
       commitsBehind = isBehindRegEx.exec(status)[1];
     }
   } catch (error) {
-    console.log('error updating git repo to check for new changes');
+    console.log('error updating git repo to check for new changes', error);
+    // assume we need to build if this failed
+    commitsBehind = 1;
   }
 
   if (commitsBehind && !isNaN(commitsBehind)) {
