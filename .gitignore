@@ -2,3 +2,4 @@ node_modules/
 sendgrid-key.json
 logs/*
 definitions/*
+test.js
