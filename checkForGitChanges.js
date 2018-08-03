@@ -1,4 +1,5 @@
-const execSync = require('child_process').execSync;
+//const execSync = require('child_process').execSync;
+const spawnSync = require('cross-spawn').sync;
 
 // https://regex101.com/r/P463Ja/1
 const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commit', 'gm');
@@ -8,18 +9,27 @@ module.exports.isBehind = function (directory) {
 
   try {
     // update remote repo info
-    execSync('git remote update', {
-      cwd: directory
+    spawnSync('git remote update', {
+      cwd: directory,
+      env: process.env,
+      shell: true
     });
 
     // get local status
-    var status = execSync('git status', {
-      cwd: directory
+    var status = spawnSync('git status', {
+      cwd: directory,
+      env: process.env,
+      shell: true
     });
 
+    var output = null;
+    if(!!status && !!status.output) {
+      output = status.output.toString();
+    }
+
     // check status for 'behind by N commits'
-    if (!!status) {
-      var matches = isBehindRegEx.exec(status);
+    if (!!output) {
+      var matches = isBehindRegEx.exec(output);
       if (!!matches && matches.length >= 2) {
         commitsBehind = matches[1];
       }

@@ -167,8 +167,8 @@ function BuildManager(configDir, logDir) {
     }
 
     // if the build def specifies that it should only run when there are changes, check (git) if repo is behind changes
-    var isBehind = true;
-    if (!!buildDef.onlyRunForChanges) {
+    var isBehind = true; // default to true before we check our build def (start build was called for a reason, after all)
+    if ((force == null || force === false) && !!buildDef.onlyRunForChanges) {
       isBehind = isBehindGit(buildDef.directory);
     }
 
