@@ -2,11 +2,14 @@
 
 Hosts a simple build system using ExpressJS and Angular.
 
-To get it up and running, use these 3 commands:
+To get it up and running, use these commands from the root of the repository:
 
 ```
 npm install
+cd client
+npm install
 npm run prod
+cd ..
 npm run start
 ```
 **npm run prod**: builds the client (Angular) app with the prod flag set (for minification)
