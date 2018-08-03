@@ -27,12 +27,23 @@ export class BuildDefinition {
     public name: string = '',
     public directory: string = '',
     public schedule: string = '',
+    public onlyRunForChanges: boolean = false,
     public steps: BuildStep[] = []
   ) {}
 }
 
 export class BuildStep {
-  constructor(public command: string = '', public args: string[] = [], public directory: string = '') {}
+  constructor(
+    public command: string = '',
+    public args: string[] = [],
+    public directory: string = '',
+    public failText: string = '',
+    public unstableText: string = ''
+  ) {}
+}
+
+export class BuildDefFile {
+  constructor(public fileName: string, public buildName: string) {}
 }
 
 export class BuildProcess {
