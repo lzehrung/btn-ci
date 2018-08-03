@@ -5,13 +5,8 @@ const spawn = require('cross-spawn');
 const readline = require('readline');
 const sgMail = require('@sendgrid/mail');
 const isBehindGit = require('./checkForGitChanges').isBehind;
-const { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep } = require('./models');
+import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildProcess } from ('./models');
 
-function BuildProcess(buildName, process) {
-  var self = this;
-  self.buildName = buildName;
-  self.process = process;
-}
 
 function BuildManager(configDir, logDir) {
   var self = this;

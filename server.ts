@@ -1,7 +1,7 @@
-const express = require('express');
+import * as express from 'express';
 const app = express();
 const BuildManager = require('./buildManager');
-const { BuildStatus } = require('./models');
+import { BuildDefinition, BuildStatus } from './models';
 
 // settings
 const appName = 'BetterThanNothingCI';
@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/builds', (req, res) => {
-  var buildInfoObjects = buildMgr.configs.map((buildDef) => {
+  var buildInfoObjects = buildMgr.configs.map((buildDef: BuildDefinition) => {
     return {
       buildDef: buildDef,
       latestRun: null || buildMgr.mostRecentLog(buildDef.name)
@@ -49,7 +49,7 @@ app.get('/builds/:buildName', (req, res) => {
 });
 
 app.post('/start/:buildName', (req, res) => {
-  var buildDef = buildMgr.configs.find((def) => {
+  var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
   if (!!buildDef) {
@@ -62,17 +62,17 @@ app.post('/start/:buildName', (req, res) => {
       });
       return;
     } else {
-      res.sendStatus(400, 'Build already running');
+      res.sendStatus(400).send('Build already running');
       return;
     }
   } else {
-    res.sendStatus(404, 'No build definition found');
+    res.sendStatus(404).send('No build definition found');
     return;
   }
 });
 
 app.post('/cancel/:buildName', (req, res) => {
-  var buildDef = buildMgr.configs.find((def) => {
+  var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
   if (!!buildDef) {
@@ -85,11 +85,11 @@ app.post('/cancel/:buildName', (req, res) => {
       });
       return;
     } else {
-      res.sendStatus(400, 'Build already cancelled');
+      res.sendStatus(400).send('Build already cancelled');
       return;
     }
   } else {
-    res.sendStatus(404, 'No build definition found');
+    res.sendStatus(404).send('No build definition found');
     return;
   }
 });
