@@ -11,8 +11,6 @@ const logDir = process.cwd() + '/logs';
 const buildMgr = new BuildManager(configDir, logDir);
 buildMgr.load();
 
-app.set('views', process.cwd() + '/views');
-app.set('view engine', 'pug');
 app.use(express.static('client\\dist\\client'));
 
 app.get('/', (req, res) => {
