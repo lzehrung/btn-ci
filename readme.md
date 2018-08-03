@@ -2,8 +2,21 @@
 
 Hosts a simple build system using ExpressJS and Angular.
 
+To get it up and running, use these 3 commands:
+
+```
+npm install
+npm run prod
+npm run start
+```
+**npm run prod**: builds the client (Angular) app with the prod flag set (for minification)
+
+**npm run start**: starts the server (which will look for build definitions, schedule any with cron schedules, and starts the Express app that hosts the client)
+
+
 ## Build Definitions
 Add a JSON configuration file to the definitions folder to set up a build. Here's an example:
+
 
 ```JSON
 {
