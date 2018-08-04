@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-import { ChildProcess } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as readline from 'readline';
 import * as sgMail from '@sendgrid/mail';
 import * as schedule from 'node-schedule';
 import * as spawn from 'cross-spawn';
+import { ChildProcess } from 'child_process';
 import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildProcess, BuildDefFile } from './models';
 import { checkGitForChanges } from './checkForGitChanges';
 
@@ -75,7 +75,7 @@ export class BuildManager {
     this.configs = [];
 
     try {
-      this.sendGridKey = JSON.parse(fs.readFileSync(sendGridApiKeyFilename)).key;
+      this.sendGridKey = JSON.parse(fs.readFileSync(sendGridApiKeyFilename, 'utf8')).key;
     } catch (err) {
       console.log('no sendgrid api key found, unable to send emails.');
     }
@@ -107,7 +107,7 @@ export class BuildManager {
   loadBuildDefFile(fileName: string) {
     var filePath = path.join(this.configDir, fileName);
     console.log(`loading build def: ${filePath}`);
-    var configFile = fs.readFileSync(filePath);
+    var configFile = fs.readFileSync(filePath, 'utf8');
     var buildDef = JSON.parse(configFile);
 
     if (buildDef.name && buildDef.steps && buildDef.directory) {
@@ -246,7 +246,7 @@ export class BuildManager {
             var failedStepLogs = null;
             if (step.failText) {
               var failReg = new RegExp(step.failText, 'gm');
-              failedStepLogs = buildResult.log.filter(item => {
+              failedStepLogs = buildResult.log.filter((item: LogLine) => {
                 var matches = failReg.exec(item.message);
                 return !!matches && matches.length >= 2 && !!matches[1];
               });
@@ -254,7 +254,7 @@ export class BuildManager {
             var unstableStepLogs = null;
             if (step.unstableText) {
               var unstableReg = new RegExp(step.unstableText, 'gm');
-              unstableStepLogs = buildResult.log.filter(item => {
+              unstableStepLogs = buildResult.log.filter((item: LogLine) => {
                 var matches = unstableReg.exec(item.message);
                 return !!matches && matches.length >= 2 && !!matches[1];
               });
