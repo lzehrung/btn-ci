@@ -27,6 +27,8 @@ export class BuildDefinition {
     public name: string = '',
     public directory: string = '',
     public schedule: string = '',
+    public emailFrom: string = '',
+    public emailTo: string = '',
     public onlyRunForChanges: boolean = false,
     public steps: BuildStep[] = []
   ) {}

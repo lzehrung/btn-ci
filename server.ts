@@ -1,15 +1,13 @@
 import * as express from 'express';
 const app = express();
-const BuildManager = require('./buildManager');
+import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus } from './models';
 
 // settings
 const appName = 'BetterThanNothingCI';
 const port = 3000;
-const configDir = process.cwd() + '/definitions';
-const logDir = process.cwd() + '/logs';
-const buildMgr = new BuildManager(configDir, logDir);
-buildMgr.load();
+const configDir = process.cwd() + '\\definitions';
+const logDir = process.cwd() + '\\logs';
 
 app.use(express.static('client\\dist\\client'));
 
@@ -27,6 +25,10 @@ app.get('/builds', (req, res) => {
   });
   res.json(buildInfoObjects);
   return;
+});
+
+app.post('/builds/reload', (req, res) => {
+  
 });
 
 app.get('/builds/:buildName', (req, res) => {
@@ -48,7 +50,7 @@ app.get('/builds/:buildName', (req, res) => {
   }
 });
 
-app.post('/start/:buildName', (req, res) => {
+app.post('/builds/:buildName/start', (req, res) => {
   var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
@@ -71,7 +73,7 @@ app.post('/start/:buildName', (req, res) => {
   }
 });
 
-app.post('/cancel/:buildName', (req, res) => {
+app.post('/builds/:buildName/cancel', (req, res) => {
   var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
@@ -94,7 +96,7 @@ app.post('/cancel/:buildName', (req, res) => {
   }
 });
 
-console.log('scheduling builds...');
-buildMgr.scheduleBuilds();
+const buildMgr = new BuildManager(configDir, logDir);
+buildMgr.load();
 
 app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));

@@ -13,7 +13,7 @@ export class BuildService {
   }
 
   startBuild(name: string): Observable<any> {
-    return this.http.post(`start/${name}`, null);
+    return this.http.post(`builds/${name}/start`, null);
   }
 
   checkBuild(name: string): Observable<IBuildInfo> {
@@ -21,7 +21,7 @@ export class BuildService {
   }
 
   cancelBuild(name: any): Observable<any> {
-    return this.http.post(`cancel/${name}`, null);
+    return this.http.post(`builds/${name}/cancel`, null);
   }
 }
 
