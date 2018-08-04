@@ -40,8 +40,9 @@ In order to send emails, put a [SendGrid](https://sendgrid.com/) API key in a fi
 ```
 
 ### Build Definitions
-Add a JSON configuration file to the definitions folder to set up a build. Here's an example:
+Add a JSON configuration file to the definitions folder to set up a build. This will be re-loaded before a build starts allowing you to make tweaks to it without restarting the server.
 
+Here's an example:
 
 ```JSON
 {

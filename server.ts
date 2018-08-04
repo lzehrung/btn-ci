@@ -28,7 +28,12 @@ app.get('/builds', (req, res) => {
 });
 
 app.post('/builds/reload', (req, res) => {
-  
+  if(buildMgr.runningBuilds.length) {
+    buildMgr.load();
+    res.status(200);
+  } else {
+    res.status(400).send('cannot reload; builds are currently running');
+  }  
 });
 
 app.get('/builds/:buildName', (req, res) => {
