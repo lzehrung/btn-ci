@@ -10,7 +10,9 @@ I've wanted to write a simple CI system for a while just for the heck of it. It 
 
 My team at work needed basic CI for our project and the IT group hadn't updated our source control system to a version that supported this. Until this could be set up for us, my first response was to set up Jenkins on a VM but I was having issues with our npm build scripts not completing their execution (they would simply stall out and the Jenkins build would never finish). This seemed to be some sort of npm memory issue (according to my Google adventures) and I quickly lost interest in troubleshooting that. That evening I decided it was finally time to scratch the itch of building my own CI server!
 
-This probably seems like a waste of time given the number of CI systems available these days but whateva man... I had fun and it legitimately solved my work team's immediate needs! Since this was just hacked out over the course of a couple evenings, I'm going to work on cleaning it up a bit but I highly doubt we'll use it on our project forever.
+This probably seems like a waste of time given the number of CI systems available these days but whateva man... I had fun and it legitimately solved my work team's immediate needs!
+
+Since this was just hacked out over the course of a couple evenings, I'm going to work on cleaning it up a bit but I highly doubt we'll use it on our project forever.
 
 ## Usage
 
