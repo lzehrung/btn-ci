@@ -85,7 +85,7 @@ Here's an example:
 #### Definition Options
 **name**: used to identify the build
 
-**directory**: root directory that build steps will operate in (expects a git repository)
+**directory**: root directory that build steps will operate in
 
 **emailFrom**: email address to use when sending emails (currently just for failures)
 
