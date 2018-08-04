@@ -1,10 +1,10 @@
 {
   "name": "better-than-nothing-ci",
   "version": "1.0.0",
-  "description": "BetterThanNothingCI: a CI server that's better than nothing! This is an ExpressJS app that periodically runs a git pull, ionic build, our unit tests and then alerts of failure.",
+  "description": "BetterThanNothingCI: a CI server that's better than nothing! Provides a way for you to automate console commands in a folder (on a cron schedule) and view the output in a browser.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "tsc && node server.js",
     "build": "cd client && ng build",
     "prod": "cd client && ng build --prod"
   },
@@ -19,6 +19,8 @@
     "pug": "^2.0.3"
   },
   "devDependencies": {
-    "@types/express": "^4.16.0"
+    "@types/express": "^4.16.0",
+    "@types/node-schedule": "^1.2.2",
+    "@types/cross-spawn": "^6.0.0"
   }
 }

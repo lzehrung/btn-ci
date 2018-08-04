@@ -1,100 +1,105 @@
-const express = require('express');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express = require("express");
 const app = express();
-const BuildManager = require('./buildManager');
-const { BuildStatus } = require('./models');
-
+const buildManager_1 = require("./buildManager");
+const models_1 = require("./models");
 // settings
 const appName = 'BetterThanNothingCI';
 const port = 3000;
-const configDir = process.cwd() + '/definitions';
-const logDir = process.cwd() + '/logs';
-const buildMgr = new BuildManager(configDir, logDir);
-buildMgr.load();
-
+const configDir = process.cwd() + '\\definitions';
+const logDir = process.cwd() + '\\logs';
 app.use(express.static('client\\dist\\client'));
-
 app.get('/', (req, res) => {
-  res.sendFile('client\\dist\\client\\index.html');
-  return;
+    res.sendFile('client\\dist\\client\\index.html');
+    return;
 });
-
 app.get('/builds', (req, res) => {
-  var buildInfoObjects = buildMgr.configs.map((buildDef) => {
-    return {
-      buildDef: buildDef,
-      latestRun: null || buildMgr.mostRecentLog(buildDef.name)
-    };
-  });
-  res.json(buildInfoObjects);
-  return;
-});
-
-app.get('/builds/:buildName', (req, res) => {
-  var buildDef = buildMgr.findBuildDef(req.params.buildName);
-  var latest = null;
-  if (!!buildDef) {
-    latest = buildMgr.mostRecentLog(req.params.buildName);
-  }
-
-  if (!!buildDef) {
-    res.json({
-      buildDef: buildDef,
-      latestRun: latest
+    var buildInfoObjects = buildMgr.configs.map((buildDef) => {
+        return {
+            buildDef: buildDef,
+            latestRun: null || buildMgr.mostRecentLog(buildDef.name)
+        };
     });
+    res.json(buildInfoObjects);
     return;
-  } else {
-    res.status(404);
-    return;
-  }
 });
-
-app.post('/start/:buildName', (req, res) => {
-  var buildDef = buildMgr.configs.find((def) => {
-    return def.name == req.params.buildName;
-  });
-  if (!!buildDef) {
-    var latest = buildMgr.mostRecentLog(req.params.buildName);
-    if (!latest || latest.result != BuildStatus.Running) {
-      latest = buildMgr.startBuild(buildDef, true);
-      res.json({
-        buildDef: buildDef,
-        latestRun: latest
-      });
-      return;
-    } else {
-      res.sendStatus(400, 'Build already running');
-      return;
+app.post('/builds/reload', (req, res) => {
+    if (buildMgr.runningBuilds.length) {
+        buildMgr.load();
+        res.status(200);
     }
-  } else {
-    res.sendStatus(404, 'No build definition found');
-    return;
-  }
-});
-
-app.post('/cancel/:buildName', (req, res) => {
-  var buildDef = buildMgr.configs.find((def) => {
-    return def.name == req.params.buildName;
-  });
-  if (!!buildDef) {
-    var latest = buildMgr.mostRecentLog(req.params.buildName);
-    if (!latest || latest.result != BuildStatus.Cancelled) {
-      latest = buildMgr.cancelBuild(buildDef.name);
-      res.json({
-        buildDef: buildDef,
-        latestRun: latest
-      });
-      return;
-    } else {
-      res.sendStatus(400, 'Build already cancelled');
-      return;
+    else {
+        res.status(400).send('cannot reload; builds are currently running');
     }
-  } else {
-    res.sendStatus(404, 'No build definition found');
-    return;
-  }
 });
-
-console.log('scheduling builds...');
-buildMgr.scheduleBuilds();
-
+app.get('/builds/:buildName', (req, res) => {
+    var buildDef = buildMgr.findBuildDef(req.params.buildName);
+    var latest = null;
+    if (!!buildDef) {
+        latest = buildMgr.mostRecentLog(req.params.buildName);
+    }
+    if (!!buildDef) {
+        res.json({
+            buildDef: buildDef,
+            latestRun: latest
+        });
+        return;
+    }
+    else {
+        res.status(404);
+        return;
+    }
+});
+app.post('/builds/:buildName/start', (req, res) => {
+    var buildDef = buildMgr.configs.find((def) => {
+        return def.name == req.params.buildName;
+    });
+    if (!!buildDef) {
+        var latest = buildMgr.mostRecentLog(req.params.buildName);
+        if (!latest || latest.result != models_1.BuildStatus.Running) {
+            latest = buildMgr.startBuild(buildDef, true);
+            res.json({
+                buildDef: buildDef,
+                latestRun: latest
+            });
+            return;
+        }
+        else {
+            res.sendStatus(400).send('Build already running');
+            return;
+        }
+    }
+    else {
+        res.sendStatus(404).send('No build definition found');
+        return;
+    }
+});
+app.post('/builds/:buildName/cancel', (req, res) => {
+    var buildDef = buildMgr.configs.find((def) => {
+        return def.name == req.params.buildName;
+    });
+    if (!!buildDef) {
+        var latest = buildMgr.mostRecentLog(req.params.buildName);
+        if (!latest || latest.result != models_1.BuildStatus.Cancelled) {
+            latest = buildMgr.cancelBuild(buildDef.name);
+            res.json({
+                buildDef: buildDef,
+                latestRun: latest
+            });
+            return;
+        }
+        else {
+            res.sendStatus(400).send('Build already cancelled');
+            return;
+        }
+    }
+    else {
+        res.sendStatus(404).send('No build definition found');
+        return;
+    }
+});
+const buildMgr = new buildManager_1.BuildManager(configDir, logDir);
+buildMgr.load();
 app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));
+//# sourceMappingURL=server.js.map
