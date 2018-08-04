@@ -2,6 +2,8 @@
 
 Hosts a simple build system using ExpressJS, Angular, [node-schedule](https://www.npmjs.com/package/node-schedule), and [cross-spawn](https://www.npmjs.com/package/cross-spawn).
 
+Essentially it runs console commands in a directory and can do so on a schedule. Can be configured to email when stdout text conditions are met.
+
 #### Why?
 
 I've wanted to write a simple CI system for a while just for the heck of it. It seems like a simple enough problem to solve, excluding any fancy integration features.
