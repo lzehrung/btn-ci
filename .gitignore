@@ -2,6 +2,7 @@ node_modules/
 sendgrid-key.json
 server/logs/*
 server/definitions/*
+!server/definitions/example.json
 server/*.js.map
 server/*.js
 test.js

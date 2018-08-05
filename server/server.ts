@@ -9,7 +9,7 @@ const port = 3000;
 const configDir = process.cwd() + '\\definitions';
 const logDir = process.cwd() + '\\logs';
 
-app.use(express.static('client\\dist\\client'));
+app.use(express.static('..\\client\\dist\\client'));
 
 app.get('/', (req, res) => {
   res.sendFile('client\\dist\\client\\index.html');

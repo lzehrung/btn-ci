@@ -9,7 +9,8 @@
     "prod": "cd client && ng build --prod"
   },
   "keywords": [
-    "ci", "build system"
+    "ci",
+    "build system"
   ],
   "author": "Luke Zehrung",
   "license": "MIT",

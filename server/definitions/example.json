@@ -1,0 +1,11 @@
+{
+  "name": "example",
+  "directory": ".\\",
+  "schedule": "*/5 * * * *",
+  "steps": [
+    {
+      "command": "ping",
+      "args": ["8.8.8.8"]
+    }
+  ]
+}
