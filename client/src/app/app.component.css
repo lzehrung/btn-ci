@@ -12,3 +12,27 @@
 .table-header {
   font-weight: bold;
 }
+
+.build-result-chips {
+  margin-left: 2rem;
+}
+
+.build-result-chip.success {
+  background: rgb(70, 210, 70);
+  color: black;
+}
+
+.build-result-chip.cancelled {
+  background: rgb(250, 250, 100);
+  color: black;
+}
+
+.build-result-chip.failed {
+  background: rgb(245, 75, 75);
+  color: black;
+}
+
+.build-result-chip.running {
+  background: rgb(120, 120, 255);
+  color: black;
+}

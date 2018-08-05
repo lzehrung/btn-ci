@@ -4,43 +4,52 @@
     {{ title }} {{ emoji }}
   </h1>
 </div>
-<h2>Builds:</h2>
-<div *ngFor="let build of builds">
-  <div>
-    <div class="build-name">{{build.buildDef.name}}</div>
+<h2>Builds</h2>
+<mat-accordion multi="true">
+  <mat-expansion-panel *ngFor="let build of builds">
+    <mat-expansion-panel-header>
+      <span class="build-name">
+        {{build.buildDef.name}}
+      </span>
+      <mat-chip-list class="build-result-chips" *ngIf="build.latestRun">
+        <mat-chip class="build-result-chip" [ngClass]="chipClass(build)">
+          {{build.latestRun.result}}
+        </mat-chip>
+      </mat-chip-list>
+    </mat-expansion-panel-header>
     <ng-container *ngIf="!build.watching">
-      <button type="button" (click)="checkBuild(build.buildDef.name)">Refresh</button>
+      <button mat-raised-button (click)="checkBuild(build.buildDef.name)" color="primary">Refresh</button>
     </ng-container>
     &nbsp;&nbsp;
     <ng-container *ngIf="!isRunning(build)">
-      <button type="button" (click)="startBuild(build.buildDef.name)">Start</button>
+      <button mat-raised-button (click)="startBuild(build.buildDef.name)" color="primary">Start</button>
     </ng-container>
     <ng-container *ngIf="isRunning(build)">
-      <button type="button" (click)="cancelBuild(build.buildDef.name)">Cancel</button>
+      <button mat-raised-button (click)="cancelBuild(build.buildDef.name)" color="primary">Cancel</button>
     </ng-container>
-  </div>
-  <ng-container *ngIf="build.latestRun">
-    <div>
-      <h3>Latest Build</h3>
-      <h4>{{build.latestRun.lastUpdated | date:'h:mm:ss a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
-      <table>
-        <thead class="table-header">
-          <tr>
-            <td class="time-col">Time</td>
-            <td class="step-col">Step</td>
-            <td>Message</td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let line of build.latestRun.log">
-            <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm:ss a'}}</td>
-            <td class="step-col">{{line.command}}</td>
-            <td>
-              <pre>{{line.message}}</pre>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </ng-container>
-</div>
+    <ng-container *ngIf="build.latestRun">
+      <div>
+        <h3>Latest Build</h3>
+        <h4>{{build.latestRun.lastUpdated | date:'h:mm:ss a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
+        <table>
+          <thead class="table-header">
+            <tr>
+              <td class="time-col">Time</td>
+              <td class="step-col">Step</td>
+              <td>Message</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of build.latestRun.log">
+              <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm:ss a'}}</td>
+              <td class="step-col">{{line.command}}</td>
+              <td>
+                <pre>{{line.message}}</pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+  </mat-expansion-panel>
+</mat-accordion>

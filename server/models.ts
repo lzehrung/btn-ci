@@ -1,4 +1,8 @@
-import { ChildProcess } from 'child_process';
+export interface IBuildInfo {
+  buildDef: BuildDefinition;
+  latestRun: BuildResult;
+  watching: boolean;
+}
 
 export class BuildResult {
   constructor(
@@ -46,8 +50,4 @@ export class BuildStep {
 
 export class BuildDefFile {
   constructor(public fileName: string, public buildName: string) {}
-}
-
-export class BuildProcess {
-  constructor(public buildName: string, public process: ChildProcess) {}
 }

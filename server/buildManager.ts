@@ -5,8 +5,9 @@ import * as sgMail from '@sendgrid/mail';
 import * as schedule from 'node-schedule';
 import * as spawn from 'cross-spawn';
 import { ChildProcess } from 'child_process';
-import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildProcess, BuildDefFile } from './models';
+import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildDefFile } from './models';
 import { checkGitForChanges } from './checkForGitChanges';
+import { BuildProcess } from './server-models';
 
 const sendGridApiKeyFilename = 'sendgrid-key.json';
 
@@ -108,7 +109,7 @@ export class BuildManager {
     var filePath = path.join(this.configDir, fileName);
     console.log(`loading build def: ${filePath}`);
     var configFile = fs.readFileSync(filePath, 'utf8');
-    var buildDef = JSON.parse(configFile);
+    var buildDef = <BuildDefinition>JSON.parse(configFile);
 
     if (buildDef.name && buildDef.steps && buildDef.directory) {
       var existingDef = this.findBuildDef(buildDef.name);

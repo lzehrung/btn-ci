@@ -1,5 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 
-.test {
-  width: 100%;
+@import '~@angular/material/prebuilt-themes/purple-green.css';
+
+body {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
 }

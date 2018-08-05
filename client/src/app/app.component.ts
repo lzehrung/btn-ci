@@ -1,5 +1,6 @@
-import { BuildService, IBuildInfo, BuildStatus, IBuildResult } from './build.service';
 import { Component, OnInit } from '@angular/core';
+import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult } from '../../../server/models';
+import { BuildService } from 'src/app/build.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,7 @@ export class AppComponent implements OnInit {
   title = 'BetterThanNothingCI';
   emoji = '😉';
   homePageEmojis = ['😉', '😂', '😍', '😆', '😎', '🤔', '🤪', '🤖'];
-  foodEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];
-  // '💎',
-  // '💰',
-
+  miscEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];
   builds: IBuildInfo[] = [];
 
   constructor(private buildService: BuildService) {}
@@ -27,7 +25,7 @@ export class AppComponent implements OnInit {
 
     // try to refresh the builds every 30 seconds
     setInterval(() => {
-      var watched = this.builds.filter((build) => {
+      var watched = this.builds.filter(build => {
         return build.watching;
       });
       // if no builds are currently watched, reload the builds
@@ -37,8 +35,29 @@ export class AppComponent implements OnInit {
     }, 30000);
   }
 
+  chipClass(buildInfo: IBuildInfo) {
+    let chipClass = '';
+    if (buildInfo.latestRun && buildInfo.latestRun.result) {
+      switch (buildInfo.latestRun.result) {
+        case BuildStatus.Success:
+          chipClass = 'success';
+          break;
+        case BuildStatus.Cancelled:
+          chipClass = 'cancelled';
+          break;
+        case BuildStatus.Failed:
+          chipClass = 'failed';
+          break;
+        case BuildStatus.Running:
+          chipClass = 'running';
+          break;
+      }
+    }
+    return chipClass;
+  }
+
   loadBuilds(): void {
-    this.buildService.getBuilds().subscribe((builds) => {
+    this.buildService.getBuilds().subscribe(builds => {
       this.builds = builds;
       for (let build of this.builds) {
         // if its latest run is currently running, start watching it
@@ -54,7 +73,7 @@ export class AppComponent implements OnInit {
     let buildInfo = this.findBuild(buildName);
     if (!!buildInfo) {
       this.buildService.startBuild(buildName).subscribe(
-        (result: IBuildResult) => {
+        (result: BuildResult) => {
           let buildInfo = this.findBuild(buildName);
           buildInfo.latestRun = result;
           // build started, now we can watch for its logs
@@ -85,7 +104,7 @@ export class AppComponent implements OnInit {
           if (!!buildResult) {
             let buildInfo = this.findBuild(buildName);
             buildInfo.latestRun = buildResult.latestRun;
-            if (buildInfo.latestRun.result == 'Running') {
+            if (buildInfo.latestRun.result == BuildStatus.Running) {
               // still running, check again in a few seconds
               setTimeout(() => {
                 this.checkBuild(buildName);
@@ -108,7 +127,7 @@ export class AppComponent implements OnInit {
     let buildInfo = this.findBuild(buildName);
     if (!!buildInfo) {
       this.buildService.cancelBuild(buildName).subscribe((buildInfo: IBuildInfo) => {
-        if (buildInfo.latestRun.result == 'Cancelled') {
+        if (buildInfo.latestRun.result == BuildStatus.Cancelled) {
           console.log('cancelled build');
         }
       });
