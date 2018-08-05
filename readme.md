@@ -22,8 +22,8 @@ To get it up and running, execute these commands from the root of the repository
 npm install
 cd client
 npm install
-npm run prod
 cd ..
+npm run prod
 npm run start
 ```
 **npm run prod**: builds the client (Angular) app with the prod flag set (for minification)
