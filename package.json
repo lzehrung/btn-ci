@@ -1,8 +1,8 @@
 {
   "name": "better-than-nothing-ci",
   "version": "0.5.0",
-  "description": "BetterThanNothingCI: a CI server that's better than nothing! Provides a way for you to automate console commands in a folder (on a cron schedule) and view the output in a browser.",
-  "main": "server.js",
+  "description": "BetterThanNothing CI: a build system that's better than nothing! Provides a way for you to automate console commands in a folder (on a cron schedule) and view the output in a browser.",
+  "main": "server/server.js",
   "scripts": {
     "start": "cd server && tsc && node server.js",
     "build": "cd client && ng build",

@@ -8,7 +8,7 @@ import { BuildService } from 'src/app/build.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'BetterThanNothingCI';
+  title = 'BetterThanNothing CI';
   emoji = '😉';
   homePageEmojis = ['😉', '😂', '😍', '😆', '😎', '🤔', '🤪', '🤖'];
   miscEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];

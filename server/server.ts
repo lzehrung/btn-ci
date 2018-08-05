@@ -4,7 +4,7 @@ import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus } from './models';
 
 // settings
-const appName = 'BetterThanNothingCI';
+const appName = 'BetterThanNothing CI';
 const port = 3000;
 const configDir = process.cwd() + '\\definitions';
 const logDir = process.cwd() + '\\logs';
