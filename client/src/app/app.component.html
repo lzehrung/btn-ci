@@ -11,7 +11,10 @@
       <span class="build-name">
         {{build.buildDef.name}}
       </span>
-      <mat-chip-list class="build-result-chips" *ngIf="build.latestRun">
+      <mat-chip-list *ngIf="build.latestRun" class="build-result-chips">
+        <mat-chip>
+          {{build.latestRun.lastUpdated | date:'yyyy-MM-dd h:mm:ss a'}}
+        </mat-chip>
         <mat-chip class="build-result-chip" [ngClass]="chipClass(build)">
           {{build.latestRun.result}}
         </mat-chip>
@@ -30,7 +33,7 @@
     <ng-container *ngIf="build.latestRun">
       <div>
         <h3>Latest Build</h3>
-        <h4>{{build.latestRun.lastUpdated | date:'h:mm:ss a, yyyy-MMMM-dd' }} ({{build.latestRun.result}}):</h4>
+        <h4>{{build.latestRun.lastUpdated | date:'yyyy-MM-dd h:mm:ss a' }} ({{build.latestRun.result}}):</h4>
         <table>
           <thead class="table-header">
             <tr>
