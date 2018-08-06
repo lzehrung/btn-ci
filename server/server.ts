@@ -6,7 +6,7 @@ import * as http from 'http';
 const server = new http.Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
-import { Request, Response } from 'express-serve-static-core';
+import { Request, Response } from 'express';
 import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
 
