@@ -20,19 +20,16 @@ To get it up and running, execute these commands from the root of the repository
 
 ```
 npm install
-cd client
-npm install
-cd ..
-npm run prod
 npm run start
 ```
+
 **npm run prod**: builds the client (Angular) app with the prod flag set (for minification)
 
 **npm run start**: starts the server (which will load build definitions and schedule any with cron schedules), which hosts the client app
 
 You should be able to browse to http://localhost:3000 and see the "exampleBuild" listed. Click the Start button and it will run a "build" that just pings Google's DNS server.
 
-In order to send emails, put a [SendGrid](https://sendgrid.com/) API key in a file named **'sendgrid-key.json'** in the application root folder with this format:
+In order to send emails, put a [SendGrid](https://sendgrid.com/) API key in a file named **'sendgrid-key.json'** in the 'server' folder with this format:
 ```JSON
 {
   "key": "YOUR SENDGRID KEY"
