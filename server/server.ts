@@ -17,7 +17,7 @@ app.use(express.static('..\\client\\dist\\client'));
 
 // http routes
 app.get('/', (req, res) => {
-  res.sendFile('client\\dist\\client\\index.html');
+  res.sendFile('index.html');
   return;
 });
 
