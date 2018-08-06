@@ -32,12 +32,12 @@ app.get('/builds', (req: Request, res: Response) => {
 });
 
 app.post('/builds/reload', async (req: Request, res: Response) => {
-  if(buildMgr.runningBuilds.length) {
+  if (buildMgr.runningBuilds.length) {
     await buildMgr.reload();
     res.status(200);
   } else {
-    res.status(400).send('cannot reload; builds are currently running');
-  }  
+    res.status(400);
+  }
 });
 
 app.get('/builds/:buildName', (req: Request, res: Response) => {
@@ -73,11 +73,11 @@ app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
       });
       return;
     } else {
-      res.sendStatus(400).send('Build already running');
+      res.sendStatus(400);
       return;
     }
   } else {
-    res.sendStatus(404).send('No build definition found');
+    res.sendStatus(404);
     return;
   }
 });
@@ -96,11 +96,11 @@ app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
       });
       return;
     } else {
-      res.sendStatus(400).send('Build already cancelled');
+      res.sendStatus(400);
       return;
     }
   } else {
-    res.sendStatus(404).send('No build definition found');
+    res.sendStatus(404);
     return;
   }
 });
@@ -110,7 +110,7 @@ buildMgr.emitter.on(BuildManagerEvents.StartReload, () => {
   io.emit(BuildManagerEvents.StartReload);
 });
 
-buildMgr.emitter.on(BuildManagerEvents.EndReload, (builds: BuildDefinition[])=>{
+buildMgr.emitter.on(BuildManagerEvents.EndReload, (builds: BuildDefinition[]) => {
   io.emit(BuildManagerEvents.EndReload, builds);
 });
 
@@ -133,7 +133,6 @@ buildMgr.emitter.on(BuildManagerEvents.UpdateBuildStep, (buildResult: BuildResul
 buildMgr.emitter.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) => {
   io.emit(BuildManagerEvents.EndBuildStep, buildResult);
 });
-
 
 // startup
 buildMgr.reload();
