@@ -4,6 +4,7 @@
   "schedule": "*/5 * * * *",
   "steps": [
     {
+      "name": "Ping Google DNS Server",
       "command": "ping",
       "args": ["8.8.8.8"]
     }

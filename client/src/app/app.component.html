@@ -20,9 +20,7 @@
         </mat-chip>
       </mat-chip-list>
     </mat-expansion-panel-header>
-    <ng-container *ngIf="!build.watching">
-      <button mat-raised-button (click)="checkBuild(build.buildDef.name)" color="primary">Refresh</button>
-    </ng-container>
+    <button mat-raised-button (click)="checkBuild(build.buildDef.name)" color="primary">Refresh</button>
     &nbsp;&nbsp;
     <ng-container *ngIf="!isRunning(build)">
       <button mat-raised-button (click)="startBuild(build.buildDef.name)" color="primary">Start</button>

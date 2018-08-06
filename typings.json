@@ -1,3 +1,5 @@
 {
-  "globalDependencies": {}
+  "globalDependencies": {
+    "socket.io": "registry:dt/socket.io#1.4.4+20170313110830"
+  }
 }
