@@ -4,8 +4,9 @@ import * as readline from 'readline';
 import * as sgMail from '@sendgrid/mail';
 import * as schedule from 'node-schedule';
 import * as spawn from 'cross-spawn';
+import { EventEmitter } from 'events';
 import { ChildProcess } from 'child_process';
-import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildDefFile } from './models';
+import { BuildResult, BuildStatus, LogLine, BuildDefinition, BuildStep, BuildDefFile, IBuildInfo } from './models';
 import { checkGitForChanges } from './checkForGitChanges';
 import { BuildProcess } from './server-models';
 
@@ -18,6 +19,7 @@ export class BuildManager {
   public scheduledBuilds: any[] = [];
   public buildLogs: BuildResult[] = [];
   public buildProcesses: BuildProcess[] = [];
+  public readonly emitter = new EventEmitter();
 
   constructor(public configDir: string, public logDir: string) {}
 
@@ -378,5 +380,16 @@ export class BuildManager {
         console.log('failed to send email', err);
       }
     }
+  }
+
+  getBuildInfo(): IBuildInfo[] {
+    var buildInfoObjects = this.configs.map((buildDef: BuildDefinition): IBuildInfo => {
+      return {
+        buildDef: buildDef,
+        latestRun: null || this.mostRecentLog(buildDef.name),
+        watching: undefined
+      };
+    });
+    return buildInfoObjects;
   }
 }

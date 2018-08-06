@@ -1,5 +1,10 @@
 import * as express from 'express';
 const app = express();
+const server = require('http').Server(app);
+import * as socket from 'socket.io';
+const io = socket(server);
+
+// local imports
 import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus } from './models';
 
@@ -17,12 +22,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/builds', (req, res) => {
-  var buildInfoObjects = buildMgr.configs.map((buildDef: BuildDefinition) => {
-    return {
-      buildDef: buildDef,
-      latestRun: null || buildMgr.mostRecentLog(buildDef.name)
-    };
-  });
+  var buildInfoObjects = buildMgr.getBuildInfo();
   res.json(buildInfoObjects);
   return;
 });
@@ -101,7 +101,13 @@ app.post('/builds/:buildName/cancel', (req, res) => {
   }
 });
 
+io.on('connection', (socket) => {
+  socket.emit('builds', buildMgr.getBuildInfo());
+});
+
 const buildMgr = new BuildManager(configDir, logDir);
 buildMgr.load();
 
-app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));
+server.listen(port);
+
+// app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));

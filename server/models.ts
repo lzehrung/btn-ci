@@ -1,7 +1,7 @@
 export interface IBuildInfo {
   buildDef: BuildDefinition;
-  latestRun: BuildResult;
-  watching: boolean;
+  latestRun: BuildResult | null;
+  watching: boolean | undefined;
 }
 
 export class BuildResult {
