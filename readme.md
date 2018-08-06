@@ -1,8 +1,8 @@
 # BetterThanNothing CI
 
-Hosts a simple build system using ExpressJS, Angular, [node-schedule](https://www.npmjs.com/package/node-schedule), and [cross-spawn](https://www.npmjs.com/package/cross-spawn).
+Hosts a simple build system using [Express](https://expressjs.com/), [node-schedule](https://www.npmjs.com/package/node-schedule), [cross-spawn](https://www.npmjs.com/package/cross-spawn), [socket.io](https://socket.io/), and [Angular](https://angular.io/).
 
-Essentially, it runs console commands in a directory and can do so on a schedule. It can also be configured to email when stdout text conditions are met (for example "SOMETHING FAILED!").
+Essentially, it will run console commands in a directory and can do so on a schedule. It can also be configured to email when the build fails (due to stdout containing failure text or the command exiting without success).
 
 #### Why?
 
