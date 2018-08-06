@@ -3,8 +3,6 @@ const app = express();
 const server = require('http').Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
-
-// local imports
 import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
 
@@ -17,6 +15,7 @@ const buildMgr = new BuildManager(configDir, logDir);
 
 app.use(express.static('..\\client\\dist\\client'));
 
+// http routes
 app.get('/', (req, res) => {
   res.sendFile('client\\dist\\client\\index.html');
   return;
@@ -102,12 +101,7 @@ app.post('/builds/:buildName/cancel', (req, res) => {
   }
 });
 
-// io.on('connection', (socket) => {
-//   socket.emit('all-builds', buildMgr.getBuildInfo());
-
-  
-// });
-
+// socket config
 buildMgr.emitter.on(BuildManagerEvents.StartReload, () => {
   io.emit(BuildManagerEvents.StartReload);
 });
@@ -136,9 +130,9 @@ buildMgr.emitter.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) 
   io.emit(BuildManagerEvents.EndBuildStep, buildResult);
 });
 
+
+// startup
 buildMgr.reload();
 
 server.listen(port);
 console.log(`${appName} running! http://localhost:${port}`);
-
-// app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));

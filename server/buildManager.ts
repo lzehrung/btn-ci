@@ -56,7 +56,7 @@ export class BuildManager {
     return null;
   }
 
-  /** Find a build's most recent build result. */
+  /** Find a build's most recent result. */
   mostRecentLog(buildName: string): BuildResult | null {
     let mostRecentLog = null;
     if (!!this.buildLogs) {
