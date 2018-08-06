@@ -11,7 +11,7 @@ import { SocketIoModule, SocketIoConfig } from 'ngx-socket-io';
 
 import { AppComponent } from './app.component';
 
-const socketConfig: SocketIoConfig = { url: 'http://localhost:3000', options: {} };
+const socketConfig: SocketIoConfig = { url: window.location.origin, options: {} };
 
 @NgModule({
   declarations: [AppComponent],
