@@ -80,19 +80,19 @@ Here's an example:
 }
 ```
 #### Definition Options
-**name**: used to identify the build
+**name**: Used to identify the build.
 
-**directory**: root directory that build steps will operate in
+**directory**: Root directory that build steps will operate in.
 
-**emailFrom**: email address to use when sending emails (currently just for failures)
+**emailFrom**: Email address to use when sending emails (currently just for failures).
 
-**emailTo**: recipient email addresses
+**emailTo**: Recipient email addresses.
 
-**schedule**: cron schedule the build will be triggered on (via [node-schedule](https://www.npmjs.com/package/node-schedule))
+**schedule**: cron schedule the build will be triggered on (via [node-schedule](https://www.npmjs.com/package/node-schedule)).
 
-**onlyRunForChanges**: boolean (**NOTE**: this feature only works with git right now); if true, the build will only execute if the git repository has new commits when it runs on its schedule (builds started manually from the website will ignore this setting)
+**onlyRunForChanges**: Boolean (**NOTE**: this feature only works with git right now); if true, the build will only execute if the git repository has new commits when it runs on its schedule (builds started manually from the website will ignore this setting).
 
-**steps**: your build process; an array of objects that will be used as parameters to a node [spawn](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) function call (via [cross-spawn](https://www.npmjs.com/package/cross-spawn) to resolve some issues I was having on my Windows machine). these are expected to be console commands that will execute in your build directory.
+**steps**: Your build process; an array of objects that will be used as parameters to a node [spawn](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) function call (via [cross-spawn](https://www.npmjs.com/package/cross-spawn) to resolve some issues I was having on my Windows machine). These are expected to be console commands that will execute in your build directory. Since these are spawn function parameters, running a console command like "git reset --hard" needs to be separated like so: spawn("git", [ "reset", "--hard" ]). In this case "command"="git" and "args"=[ "reset", "--hard" ].
 
 ### Build Logs
 Logs are written to the /logs folder, here's an example:
