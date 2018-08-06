@@ -99,11 +99,12 @@ export class BuildManager {
     this.buildDefinitionFiles = [];
     this.buildDefinitions = [];
 
+    let sendGridKeyPath = path.join(process.cwd(), sendGridApiKeyFilename);
     try {
-      let file = await readFile(sendGridApiKeyFilename, 'utf8');
+      let file = await readFile(sendGridKeyPath, 'utf8');
       this.sendGridKey = JSON.parse(file).key;
     } catch (err) {
-      console.log('no sendgrid api key found, unable to send emails.');
+      console.log(`no sendgrid api key found (${sendGridKeyPath}), unable to send emails.`);
     }
 
     await this.ensureDirectoryExistence(this.logDir);
