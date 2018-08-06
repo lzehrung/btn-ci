@@ -6,6 +6,7 @@ import * as http from 'http';
 const server = new http.Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
+import { Request, Response } from 'express-serve-static-core';
 import { BuildManager } from './buildManager';
 import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
 
@@ -19,18 +20,18 @@ const buildMgr = new BuildManager(configDir, logDir);
 app.use(express.static('..\\client\\dist\\client'));
 
 // http routes
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.sendFile('index.html');
   return;
 });
 
-app.get('/builds', (req, res) => {
+app.get('/builds', (req: Request, res: Response) => {
   var buildInfoObjects = buildMgr.getBuildInfo();
   res.json(buildInfoObjects);
   return;
 });
 
-app.post('/builds/reload', async (req, res) => {
+app.post('/builds/reload', async (req: Request, res: Response) => {
   if(buildMgr.runningBuilds.length) {
     await buildMgr.reload();
     res.status(200);
@@ -39,7 +40,7 @@ app.post('/builds/reload', async (req, res) => {
   }  
 });
 
-app.get('/builds/:buildName', (req, res) => {
+app.get('/builds/:buildName', (req: Request, res: Response) => {
   var buildDef = buildMgr.findBuildDef(req.params.buildName);
   var latest = null;
   if (!!buildDef) {
@@ -58,7 +59,7 @@ app.get('/builds/:buildName', (req, res) => {
   }
 });
 
-app.post('/builds/:buildName/start', async (req, res) => {
+app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
   var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
@@ -81,7 +82,7 @@ app.post('/builds/:buildName/start', async (req, res) => {
   }
 });
 
-app.post('/builds/:buildName/cancel', (req, res) => {
+app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
   var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
