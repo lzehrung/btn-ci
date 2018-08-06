@@ -11,7 +11,6 @@ import * as sgMail from '@sendgrid/mail';
 import * as schedule from 'node-schedule';
 import * as spawn from 'cross-spawn';
 import { EventEmitter } from 'events';
-import { ChildProcess } from 'child_process';
 import {
   BuildResult,
   BuildStatus,
