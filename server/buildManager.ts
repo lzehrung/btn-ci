@@ -1,4 +1,10 @@
+import { promisify } from 'util';
 import * as fs from 'fs';
+const readDir = promisify(fs.readdir);
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
+const pathExists = promisify(fs.exists);
+const mkDir = promisify(fs.mkdir);
 import * as path from 'path';
 import * as readline from 'readline';
 import * as sgMail from '@sendgrid/mail';
@@ -6,7 +12,16 @@ import * as schedule from 'node-schedule';
 import * as spawn from 'cross-spawn';
 import { EventEmitter } from 'events';
 import { ChildProcess } from 'child_process';
-import { BuildResult, BuildStatus, LogMessage, BuildDefinition, BuildStep, BuildDefFile, IBuildInfo, BuildManagerEvents } from './models';
+import {
+  BuildResult,
+  BuildStatus,
+  LogMessage,
+  BuildDefinition,
+  BuildStep,
+  BuildDefFile,
+  IBuildInfo,
+  BuildManagerEvents
+} from './models';
 import { checkGitForChanges } from './checkForGitChanges';
 import { BuildProcess } from './server-models';
 
@@ -77,7 +92,7 @@ export class BuildManager {
   }
 
   /** Cancels any currently scheduled builds, loads the SendGrid API key file, all build definitions, and schedules builds. */
-  reload(): void {
+  async reload(): Promise<void> {
     this.emitter.emit(BuildManagerEvents.StartReload);
     this._isReloading = true;
     this.cancelScheduledBuilds();
@@ -85,25 +100,27 @@ export class BuildManager {
     this.buildDefinitions = [];
 
     try {
-      this.sendGridKey = JSON.parse(fs.readFileSync(sendGridApiKeyFilename, 'utf8')).key;
+      let file = await readFile(sendGridApiKeyFilename, 'utf8');
+      this.sendGridKey = JSON.parse(file).key;
     } catch (err) {
       console.log('no sendgrid api key found, unable to send emails.');
     }
 
-    this.ensureDirectoryExistence(this.logDir);
-    this.ensureDirectoryExistence(this.configDir);
-    let configFiles = fs.readdirSync(this.configDir).filter((file: string) => {
+    await this.ensureDirectoryExistence(this.logDir);
+    await this.ensureDirectoryExistence(this.configDir);
+    let directoryFiles = await readDir(this.configDir);
+    let buildDefinitionFiles = directoryFiles.filter((file: string) => {
       let extension = '.json';
       let extIndex = file.lastIndexOf(extension);
       return extIndex !== -1 && extIndex + extension.length == file.length;
     });
-    for (let fileName of configFiles) {
-      let buildDef = this.loadBuildDefFile(fileName);
+    for (let fileName of buildDefinitionFiles) {
+      let buildDef = await this.loadBuildDefFile(fileName);
     }
     // remove builds no longer associated with files
     let toRemove = [];
     for (let file of this.buildDefinitionFiles) {
-      if (configFiles.indexOf(file.fileName) === -1) {
+      if (buildDefinitionFiles.indexOf(file.fileName) === -1) {
         toRemove.push(file);
       }
     }
@@ -134,10 +151,10 @@ export class BuildManager {
     this.emitter.emit(BuildManagerEvents.EndReload, this.buildDefinitions);
   }
 
-  loadBuildDefFile(fileName: string): BuildDefinition {
+  async loadBuildDefFile(fileName: string): Promise<BuildDefinition> {
     let filePath = path.join(this.configDir, fileName);
     console.log(`loading build def: ${filePath}`);
-    let configFile = fs.readFileSync(filePath, 'utf8');
+    let configFile = await readFile(filePath, 'utf8');
     let buildDef = <BuildDefinition>JSON.parse(configFile);
 
     if (buildDef.name && buildDef.steps && buildDef.directory) {
@@ -156,17 +173,19 @@ export class BuildManager {
   }
 
   /** Initializes a node-schedule for builds that have CRON schedules. */
-  scheduleBuilds(): void {
-    for (let buildDef of this.buildDefinitions) {
-      if (buildDef.schedule) {
-        let job = schedule.scheduleJob(buildDef.schedule, () => {
-          let latest = this.mostRecentLog(buildDef.name);
-          if (!latest || (!!latest && latest.result != BuildStatus.Running)) {
-            this.startBuild(buildDef);
-          }
-        });
-        this.scheduledBuilds.push(job);
-      }
+  async scheduleBuilds(): Promise<void> {
+    let scheduledBuilds = this.buildDefinitions.filter((build: BuildDefinition) => {
+      return !!build.schedule;
+    });
+
+    for (let buildDef of scheduledBuilds) {
+      let job = schedule.scheduleJob(buildDef.schedule, async () => {
+        let latest = this.mostRecentLog(buildDef.name);
+        if (!this.isReloading && (!latest || (!!latest && latest.result != BuildStatus.Running))) {
+          await this.startBuild(buildDef);
+        }
+      });
+      this.scheduledBuilds.push(job);
     }
   }
 
@@ -205,7 +224,7 @@ export class BuildManager {
    * @param buildDef the build definition to use
    * @param force indicates that this build should start now even if it has a schedule
    */
-  startBuild(buildDef: BuildDefinition, force: boolean | null = null): BuildResult | null {
+  async startBuild(buildDef: BuildDefinition, force: boolean | null = null): Promise<BuildResult | null> {
     let latestRun = this.mostRecentLog(buildDef.name);
     if (!!latestRun && latestRun.result == BuildStatus.Running) {
       return latestRun;
@@ -213,7 +232,7 @@ export class BuildManager {
     // reload build def from file in case steps have changed
     let buildDefFile = this.findBuildDefFile(buildDef.name);
     if (!!buildDefFile) {
-      buildDef = this.loadBuildDefFile(buildDefFile.fileName);
+      buildDef = await this.loadBuildDefFile(buildDefFile.fileName);
     }
 
     // if the build def specifies that it should only run when there are changes, check (git) if repo is behind changes
@@ -232,12 +251,12 @@ export class BuildManager {
       buildResult.log.push(new LogMessage(`Starting build ${buildDef.name}...`));
       this.buildLogs.push(buildResult);
       this.emitter.emit(BuildManagerEvents.StartBuild, buildResult);
-      this.executeBuildStep(0, buildDef, buildResult);
+      await this.executeBuildStep(0, buildDef, buildResult);
     }
     return buildResult;
   }
 
-  executeBuildStep(index: number, buildDef: BuildDefinition, buildResult: BuildResult): void {
+  async executeBuildStep(index: number, buildDef: BuildDefinition, buildResult: BuildResult): Promise<void> {
     let step = buildDef.steps[index];
     let directory = buildDef.directory;
     let stepId = `(step-${index})` + step.command;
@@ -267,7 +286,7 @@ export class BuildManager {
         }
       });
 
-      proc.on('close', (exitCode: number) => {
+      proc.on('close', async (exitCode: number) => {
         this.removeBuildProcess(buildProc);
 
         if (buildResult.result != BuildStatus.Cancelled) {
@@ -332,7 +351,7 @@ export class BuildManager {
               `${buildDef.name} Build Failed 😭`,
               `<h2>Build Log</h2><pre>${JSON.stringify(buildResult, null, 2)}</pre>`
             );
-          }          
+          }
         }
 
         if (buildResult.result != BuildStatus.Running) {
@@ -342,9 +361,9 @@ export class BuildManager {
             buildResult.log.push(new LogMessage(`Build was cancelled 🤨`));
           }
 
-          this.writeLogFile(buildDef, buildResult);          
+          await this.writeLogFile(buildDef, buildResult);
           this.emitter.emit(BuildManagerEvents.EndBuild, buildResult);
-        }        
+        }
       });
 
       readline
@@ -370,7 +389,7 @@ export class BuildManager {
             }`
           )
         );
-        this.writeLogFile(buildDef, buildResult);
+        await this.writeLogFile(buildDef, buildResult);
         this.emitter.emit(BuildManagerEvents.EndBuild, buildResult);
       }
     }
@@ -383,7 +402,7 @@ export class BuildManager {
     }
   }
 
-  writeLogFile(buildDef: BuildDefinition, buildResult: BuildResult): void {
+  async writeLogFile(buildDef: BuildDefinition, buildResult: BuildResult): Promise<void> {
     try {
       let last = new Date(buildResult.lastUpdated);
       let logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
@@ -391,26 +410,26 @@ export class BuildManager {
       let contents = JSON.stringify(buildResult, null, 2);
       let logFilePath = path.join(this.logDir, logFileName);
 
-      fs.writeFile(logFilePath, contents, { encoding: 'utf8' }, (err: any) => {
-        if (err) {
-          console.log('error saving log file', err);
-        }
-      });
+      try {
+        await writeFile(logFilePath, contents, { encoding: 'utf8' });
+      } catch (error) {
+        console.log('error saving log file', error);
+      }
     } catch (err) {
       console.log('failed to write log file', err);
     }
   }
 
-  private ensureFileDirectoryExistence(filePath: string): void {
+  private async ensureFileDirectoryExistence(filePath: string): Promise<void> {
     let directory = path.dirname(filePath);
-    this.ensureDirectoryExistence(directory);
+    await this.ensureDirectoryExistence(directory);
   }
 
-  private ensureDirectoryExistence(directory: string): void {
-    if (fs.existsSync(directory)) {
+  private async ensureDirectoryExistence(directory: string): Promise<void> {
+    if (await pathExists(directory)) {
       return;
     }
-    fs.mkdirSync(directory);
+    await mkDir(directory);
   }
 
   sendEmail(buildDef: BuildDefinition, subject: string, htmlMessage: string): void {

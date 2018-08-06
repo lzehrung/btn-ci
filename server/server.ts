@@ -1,6 +1,9 @@
 import * as express from 'express';
+import * as expressAsyncAwait from 'express-async-await';
 const app = express();
-const server = require('http').Server(app);
+expressAsyncAwait(app);
+import * as http from 'http';
+const server = new http.Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
 import { BuildManager } from './buildManager';
@@ -27,9 +30,9 @@ app.get('/builds', (req, res) => {
   return;
 });
 
-app.post('/builds/reload', (req, res) => {
+app.post('/builds/reload', async (req, res) => {
   if(buildMgr.runningBuilds.length) {
-    buildMgr.reload();
+    await buildMgr.reload();
     res.status(200);
   } else {
     res.status(400).send('cannot reload; builds are currently running');
@@ -55,14 +58,14 @@ app.get('/builds/:buildName', (req, res) => {
   }
 });
 
-app.post('/builds/:buildName/start', (req, res) => {
+app.post('/builds/:buildName/start', async (req, res) => {
   var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
   if (!!buildDef) {
     var latest = buildMgr.mostRecentLog(req.params.buildName);
     if (!latest || latest.result != BuildStatus.Running) {
-      latest = buildMgr.startBuild(buildDef, true);
+      latest = await buildMgr.startBuild(buildDef, true);
       res.json({
         buildDef: buildDef,
         latestRun: latest
