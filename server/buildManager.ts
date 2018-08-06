@@ -17,7 +17,6 @@ import {
   BuildStatus,
   LogMessage,
   BuildDefinition,
-  BuildStep,
   BuildDefFile,
   IBuildInfo,
   BuildManagerEvents
