@@ -19,8 +19,6 @@
           {{build.latestRun.result}}
         </mat-chip>
       </mat-chip-list>
-      <!-- <mat-progress-spinner *ngIf="!!build.latestRun && build.latestRun.result == 'Running'" color="accent" mode="indeterminate">
-      </mat-progress-spinner> -->
     </mat-expansion-panel-header>
     <button mat-raised-button (click)="checkBuild(build.buildDef.name)" color="primary">Refresh</button>
     &nbsp;&nbsp;
