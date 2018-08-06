@@ -6,13 +6,14 @@ const io = socket(server);
 
 // local imports
 import { BuildManager } from './buildManager';
-import { BuildDefinition, BuildStatus } from './models';
+import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
 
 // settings
 const appName = 'BetterThanNothing CI';
 const port = 3000;
 const configDir = process.cwd() + '\\definitions';
 const logDir = process.cwd() + '\\logs';
+const buildMgr = new BuildManager(configDir, logDir);
 
 app.use(express.static('..\\client\\dist\\client'));
 
@@ -29,7 +30,7 @@ app.get('/builds', (req, res) => {
 
 app.post('/builds/reload', (req, res) => {
   if(buildMgr.runningBuilds.length) {
-    buildMgr.load();
+    buildMgr.reload();
     res.status(200);
   } else {
     res.status(400).send('cannot reload; builds are currently running');
@@ -56,7 +57,7 @@ app.get('/builds/:buildName', (req, res) => {
 });
 
 app.post('/builds/:buildName/start', (req, res) => {
-  var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
+  var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
   if (!!buildDef) {
@@ -79,7 +80,7 @@ app.post('/builds/:buildName/start', (req, res) => {
 });
 
 app.post('/builds/:buildName/cancel', (req, res) => {
-  var buildDef = buildMgr.configs.find((def: BuildDefinition) => {
+  var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
     return def.name == req.params.buildName;
   });
   if (!!buildDef) {
@@ -101,13 +102,43 @@ app.post('/builds/:buildName/cancel', (req, res) => {
   }
 });
 
-io.on('connection', (socket) => {
-  socket.emit('builds', buildMgr.getBuildInfo());
+// io.on('connection', (socket) => {
+//   socket.emit('all-builds', buildMgr.getBuildInfo());
+
+  
+// });
+
+buildMgr.emitter.on(BuildManagerEvents.StartReload, () => {
+  io.emit(BuildManagerEvents.StartReload);
 });
 
-const buildMgr = new BuildManager(configDir, logDir);
-buildMgr.load();
+buildMgr.emitter.on(BuildManagerEvents.EndReload, (builds: BuildDefinition[])=>{
+  io.emit(BuildManagerEvents.EndReload, builds);
+});
+
+buildMgr.emitter.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
+  io.emit(BuildManagerEvents.StartBuild, buildResult);
+});
+
+buildMgr.emitter.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
+  io.emit(BuildManagerEvents.EndBuild, buildResult);
+});
+
+buildMgr.emitter.on(BuildManagerEvents.StartBuildStep, (buildResult: BuildResult) => {
+  io.emit(BuildManagerEvents.StartBuildStep, buildResult);
+});
+
+buildMgr.emitter.on(BuildManagerEvents.UpdateBuildStep, (buildResult: BuildResult) => {
+  io.emit(BuildManagerEvents.UpdateBuildStep, buildResult);
+});
+
+buildMgr.emitter.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) => {
+  io.emit(BuildManagerEvents.EndBuildStep, buildResult);
+});
+
+buildMgr.reload();
 
 server.listen(port);
+console.log(`${appName} running! http://localhost:${port}`);
 
 // app.listen(port, () => console.log(`${appName} running! http://localhost:${port}`));

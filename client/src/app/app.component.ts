@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult } from '../../../server/models';
+import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult, BuildManagerEvents } from '../../../server/models';
 import { BuildService } from 'src/app/build.service';
+import { Socket } from 'ngx-socket-io';
 
 @Component({
   selector: 'app-root',
@@ -14,7 +15,7 @@ export class AppComponent implements OnInit {
   miscEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];
   builds: IBuildInfo[] = [];
 
-  constructor(private buildService: BuildService) {}
+  constructor(private buildService: BuildService, private socketService: Socket) {}
 
   ngOnInit(): void {
     const emojiIndex = Math.floor(Math.random() * this.homePageEmojis.length);
@@ -23,16 +24,32 @@ export class AppComponent implements OnInit {
 
     this.loadBuilds();
 
-    // try to refresh the builds every 30 seconds
-    setInterval(() => {
-      var watched = this.builds.filter(build => {
-        return build.watching;
-      });
-      // if no builds are currently watched, reload the builds
-      if (!watched || watched.length < 1) {
-        this.loadBuilds();
-      }
-    }, 30000);
+    // TODO: add reload button, watch for server build reloads, disable interaction until reload complete
+
+    this.socketService.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latestRun = buildResult;
+    });
+
+    this.socketService.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latestRun = buildResult;
+    });
+
+    this.socketService.on(BuildManagerEvents.StartBuildStep, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latestRun = buildResult;
+    });
+
+    this.socketService.on(BuildManagerEvents.UpdateBuildStep, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latestRun = buildResult;
+    });
+
+    this.socketService.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latestRun = buildResult;
+    });
   }
 
   chipClass(buildInfo: IBuildInfo) {
@@ -76,8 +93,6 @@ export class AppComponent implements OnInit {
         (result: BuildResult) => {
           let buildInfo = this.findBuild(buildName);
           buildInfo.latestRun = result;
-          // build started, now we can watch for its logs
-          this.checkBuild(buildName);
         },
         () => {
           window.location.reload();
@@ -87,13 +102,10 @@ export class AppComponent implements OnInit {
   }
 
   findBuild(buildName: string): IBuildInfo {
-    let matching = this.builds.filter((info: IBuildInfo) => {
+    let matching = this.builds.find((info: IBuildInfo) => {
       return info.buildDef.name == buildName;
     });
-    if (!!matching) {
-      return matching[0];
-    }
-    return null;
+    return matching;
   }
 
   checkBuild(buildName: string): void {
@@ -104,16 +116,6 @@ export class AppComponent implements OnInit {
           if (!!buildResult) {
             let buildInfo = this.findBuild(buildName);
             buildInfo.latestRun = buildResult.latestRun;
-            if (buildInfo.latestRun.result == BuildStatus.Running) {
-              // still running, check again in a few seconds
-              setTimeout(() => {
-                this.checkBuild(buildName);
-              }, 2000);
-            } else {
-              buildInfo.watching = false;
-            }
-          } else {
-            buildInfo.watching = false;
           }
         },
         () => {

@@ -9,8 +9,8 @@ export class BuildResult {
     public name: string,
     public buildDef: BuildDefinition,
     public lastUpdated = new Date().toJSON(),
-    public result = BuildStatus.Running,
-    public log: LogLine[] = []
+    public result: BuildStatus = BuildStatus.Running,
+    public log: LogMessage[] = []
   ) {}
 }
 
@@ -22,7 +22,7 @@ export enum BuildStatus {
   Success = 'Success'
 }
 
-export class LogLine {
+export class LogMessage {
   constructor(public message: string = '', public command: string = '', public time = new Date().toJSON()) {}
 }
 
@@ -40,6 +40,7 @@ export class BuildDefinition {
 
 export class BuildStep {
   constructor(
+    public name: string = '',
     public command: string = '',
     public args: string[] = [],
     public directory: string = '',
@@ -50,4 +51,14 @@ export class BuildStep {
 
 export class BuildDefFile {
   constructor(public fileName: string, public buildName: string) {}
+}
+
+export enum BuildManagerEvents {
+  StartBuild = 'start-build',
+  EndBuild = 'end-build',
+  StartBuildStep = 'start-build-step',
+  UpdateBuildStep = 'update-build-step',
+  EndBuildStep = 'end-build-step',
+  StartReload = 'start-reload',
+  EndReload = 'end-reload'
 }
