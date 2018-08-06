@@ -8,7 +8,7 @@ Essentially, it will run console commands in a directory and can do so on a sche
 
 I've wanted to write a simple CI system for a while just for the heck of it. It seems like a simple enough problem to solve, excluding any fancy integration features.
 
-My team at work needed basic CI for our project and the IT group hadn't updated our source control system to a version that supported this. Until this could be set up for us, my first response was to set up Jenkins on a VM but I was having issues with our npm build scripts not completing their execution (they would simply stall out and the Jenkins build would never finish). This seemed to be some sort of npm memory issue (according to my Google adventures) and I quickly lost interest in troubleshooting that. That evening I decided it was finally time to scratch the itch of building my own CI server!
+My team at work needed basic CI for our project and our source control hadn't been updated to a version that supported the CI system we wanted to use department-wide. Until this could be set up for us, my first approach was to set up Jenkins on a VM but I was having issues with our npm build scripts not completing their execution (they would simply stall out and the Jenkins build would never finish). This seemed to be some sort of npm memory issue (according to my Google adventures) and I quickly lost interest in troubleshooting that. That evening I decided it was finally time to scratch the itch of building my own CI server!
 
 This probably seems like a waste of time given the number of CI systems available these days but... meh! I had fun and it actually solved my work team's immediate needs!
 
