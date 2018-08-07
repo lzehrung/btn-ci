@@ -5,7 +5,7 @@
   </h1>
 </div>
 <h2>Builds</h2>
-<mat-accordion multi="true">
+<mat-accordion multi="false">
   <mat-expansion-panel *ngFor="let build of builds" (opened)="buildOpened(build)" (closed)="buildClosed(build)">
     <mat-expansion-panel-header>
       <span class="build-name">
@@ -23,10 +23,10 @@
     <button mat-raised-button (click)="checkBuild(build.buildDef.name)" color="primary">Refresh</button>
     &nbsp;&nbsp;
     <ng-container *ngIf="!isRunning(build)">
-      <button mat-raised-button (click)="startBuild(build.buildDef.name)" color="primary">Start</button>
+      <button mat-raised-button (click)="startBuild(build.buildDef.name)" color="accent">Start</button>
     </ng-container>
     <ng-container *ngIf="isRunning(build)">
-      <button mat-raised-button (click)="cancelBuild(build.buildDef.name)" color="primary">Cancel</button>
+      <button mat-raised-button (click)="cancelBuild(build.buildDef.name)" color="warn">Cancel</button>
     </ng-container>
     <ng-container *ngIf="build.latestRun">
       <div>
@@ -50,6 +50,11 @@
             </tr>
           </tbody>
         </table>
+        <div>
+          <button mat-raised-button (click)="backToTop(build.buildDef.name)" color="primary">Back to top</button>
+          &nbsp;&nbsp;
+          <button mat-raised-button (click)="close()" color="primary">Close</button>
+        </div>
       </div>
     </ng-container>
   </mat-expansion-panel>

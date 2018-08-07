@@ -3,6 +3,9 @@ import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult, BuildManagerEven
 import { BuildService } from 'src/app/build.service';
 import { Socket } from 'ngx-socket-io';
 import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
+import { ViewChildren } from '@angular/core';
+import { MatExpansionPanel } from '@angular/material/expansion';
+import { QueryList } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +18,8 @@ export class AppComponent implements OnInit, OnDestroy {
   homePageEmojis = ['😉', '😂', '😍', '😆', '😎', '🤔', '🤪', '🤖'];
   miscEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];
   builds: IBuildInfo[] = [];
+
+  @ViewChildren(MatExpansionPanel) expansionPanels: QueryList<MatExpansionPanel>;
 
   constructor(private buildService: BuildService, private socketService: Socket) {}
 
@@ -165,5 +170,15 @@ export class AppComponent implements OnInit, OnDestroy {
     this.socketService.removeAllListeners(
       `${BuildManagerEvents.EndBuildStep}-${encodeURIComponent(build.buildDef.name)}`
     );
+  }
+
+  backToTop() {
+    window.scrollTo(0, 0);
+  }
+
+  close() {
+    this.expansionPanels.forEach(panel => {
+      panel.close();
+    });
   }
 }
