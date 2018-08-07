@@ -25,28 +25,12 @@ export class AppComponent implements OnInit {
     this.loadBuilds();
 
     // TODO: add reload button, watch for server build reloads, disable interaction until reload complete
-
     this.socketService.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
       build.latestRun = buildResult;
     });
 
     this.socketService.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
-      let build = this.findBuild(buildResult.buildDef.name);
-      build.latestRun = buildResult;
-    });
-
-    this.socketService.on(BuildManagerEvents.StartBuildStep, (buildResult: BuildResult) => {
-      let build = this.findBuild(buildResult.buildDef.name);
-      build.latestRun = buildResult;
-    });
-
-    this.socketService.on(BuildManagerEvents.UpdateBuildStep, (buildResult: BuildResult) => {
-      let build = this.findBuild(buildResult.buildDef.name);
-      build.latestRun = buildResult;
-    });
-
-    this.socketService.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
       build.latestRun = buildResult;
     });
@@ -79,7 +63,6 @@ export class AppComponent implements OnInit {
       for (let build of this.builds) {
         // if its latest run is currently running, start watching it
         if (!!build.latestRun && build.latestRun.result == BuildStatus.Running) {
-          build.watching = true;
           this.checkBuild(build.buildDef.name);
         }
       }
@@ -138,5 +121,44 @@ export class AppComponent implements OnInit {
 
   isRunning(buildInfo: IBuildInfo): boolean {
     return !!buildInfo.latestRun && buildInfo.latestRun.result == BuildStatus.Running;
+  }
+
+  buildOpened(build: IBuildInfo) {
+    // subscribe to this build's events
+    this.socketService.on(
+      `${BuildManagerEvents.StartBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
+      (buildResult: BuildResult) => {
+        let build = this.findBuild(buildResult.buildDef.name);
+        build.latestRun = buildResult;
+      }
+    );
+
+    this.socketService.on(
+      `${BuildManagerEvents.UpdateBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
+      (buildResult: BuildResult) => {
+        let build = this.findBuild(buildResult.buildDef.name);
+        build.latestRun = buildResult;
+      }
+    );
+
+    this.socketService.on(
+      `${BuildManagerEvents.EndBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
+      (buildResult: BuildResult) => {
+        let build = this.findBuild(buildResult.buildDef.name);
+        build.latestRun = buildResult;
+      }
+    );
+  }
+
+  buildClosed(build: IBuildInfo) {
+    this.socketService.removeAllListeners(
+      `${BuildManagerEvents.StartBuildStep}-${encodeURIComponent(build.buildDef.name)}`
+    );
+    this.socketService.removeAllListeners(
+      `${BuildManagerEvents.UpdateBuildStep}-${encodeURIComponent(build.buildDef.name)}`
+    );
+    this.socketService.removeAllListeners(
+      `${BuildManagerEvents.EndBuildStep}-${encodeURIComponent(build.buildDef.name)}`
+    );
   }
 }

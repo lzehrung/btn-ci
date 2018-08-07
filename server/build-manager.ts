@@ -18,9 +18,10 @@ import {
   BuildDefinition,
   BuildDefFile,
   IBuildInfo,
-  BuildManagerEvents
+  BuildManagerEvents,
+  IScheduledBuild
 } from './models';
-import { checkGitForChanges } from './checkForGitChanges';
+import { checkGitForChanges } from './check-for-git-changes';
 import { BuildProcess } from './server-models';
 
 const sendGridApiKeyFilename = 'sendgrid-key.json';
@@ -29,7 +30,7 @@ export class BuildManager {
   public sendGridKey: string = '';
   public buildDefinitions: BuildDefinition[] = [];
   public buildDefinitionFiles: BuildDefFile[] = [];
-  public scheduledBuilds: schedule.Job[] = [];
+  public scheduledBuilds: IScheduledBuild[] = [];
   public buildLogs: BuildResult[] = [];
   public buildProcesses: BuildProcess[] = [];
   public readonly emitter = new EventEmitter();
@@ -70,7 +71,7 @@ export class BuildManager {
   }
 
   /** Find a build's most recent result. */
-  mostRecentLog(buildName: string): BuildResult | null {
+  getMostRecentResult(buildName: string): BuildResult | null {
     let mostRecentLog = null;
     if (!!this.buildLogs) {
       let filteredLogs = this.buildLogs
@@ -150,13 +151,21 @@ export class BuildManager {
     this.emitter.emit(BuildManagerEvents.EndReload, this.buildDefinitions);
   }
 
-  async loadBuildDefFile(fileName: string): Promise<BuildDefinition> {
+  /** Loads the given filename from the definitions directory and adds it to the list of build definitions. */
+  async loadBuildDefFile(fileName: string): Promise<BuildDefinition | null> {
     let filePath = path.join(this.configDir, fileName);
     console.log(`loading build def: ${filePath}`);
-    let configFile = await readFile(filePath, 'utf8');
-    let buildDef = <BuildDefinition>JSON.parse(configFile);
-
-    if (buildDef.name && buildDef.steps && buildDef.directory) {
+    let buildDefFile = null;
+    try {
+      buildDefFile = await readFile(filePath, 'utf8');
+    } catch (error) {
+      console.log(`error loading ${filePath}`, error);
+    }
+    let buildDef = null;
+    if (buildDefFile) {
+      buildDef = <BuildDefinition>JSON.parse(buildDefFile);
+    }
+    if (!!buildDef && buildDef.name && buildDef.steps && buildDef.directory) {
       let existingDef = this.findBuildDef(buildDef.name);
       if (!!existingDef) {
         existingDef = buildDef;
@@ -179,17 +188,21 @@ export class BuildManager {
 
     for (let buildDef of scheduledBuilds) {
       let job = schedule.scheduleJob(buildDef.schedule, async () => {
-        let latest = this.mostRecentLog(buildDef.name);
+        let latest = this.getMostRecentResult(buildDef.name);
         if (!this.isReloading && (!latest || (!!latest && latest.result != BuildStatus.Running))) {
           await this.startBuild(buildDef);
         }
       });
-      this.scheduledBuilds.push(job);
+      this.scheduledBuilds.push({
+        buildName: buildDef.name,
+        job: job
+      });
     }
   }
 
   cancelScheduledBuilds(): void {
-    for (let job of this.scheduledBuilds) {
+    for (let scheduledBuild of this.scheduledBuilds) {
+      let job = <schedule.Job>scheduledBuild.job;
       schedule.cancelJob(job);
     }
     this.scheduledBuilds = [];
@@ -198,7 +211,7 @@ export class BuildManager {
   /** Cancels an actively running build. */
   cancelBuild(buildName: string): BuildResult | null {
     let buildDef = this.findBuildDef(buildName);
-    let buildResult = this.mostRecentLog(buildName);
+    let buildResult = this.getMostRecentResult(buildName);
     if (!!buildDef && !!buildResult) {
       buildResult.result = BuildStatus.Cancelled;
 
@@ -224,14 +237,17 @@ export class BuildManager {
    * @param force indicates that this build should start now even if it has a schedule
    */
   async startBuild(buildDef: BuildDefinition, force: boolean | null = null): Promise<BuildResult | null> {
-    let latestRun = this.mostRecentLog(buildDef.name);
+    let latestRun = this.getMostRecentResult(buildDef.name);
     if (!!latestRun && latestRun.result == BuildStatus.Running) {
       return latestRun;
     }
     // reload build def from file in case steps have changed
     let buildDefFile = this.findBuildDefFile(buildDef.name);
     if (!!buildDefFile) {
-      buildDef = await this.loadBuildDefFile(buildDefFile.fileName);
+      let reloadedBuildDef = await this.loadBuildDefFile(buildDefFile.fileName);
+      if (!!reloadedBuildDef) {
+        buildDef = reloadedBuildDef;
+      }
     }
 
     // if the build def specifies that it should only run when there are changes, check (git) if repo is behind changes
@@ -449,16 +465,30 @@ export class BuildManager {
     }
   }
 
-  getBuildInfo(): IBuildInfo[] {
+  getAllBuildInfo(): IBuildInfo[] {
     let buildInfoObjects = this.buildDefinitions.map(
       (buildDef: BuildDefinition): IBuildInfo => {
         return {
           buildDef: buildDef,
-          latestRun: null || this.mostRecentLog(buildDef.name),
-          watching: undefined
+          latestRun: null || this.getMostRecentResult(buildDef.name)
         };
       }
     );
     return buildInfoObjects;
+  }
+
+  getBuildInfo(buildName: string): IBuildInfo | null {
+    let buildDef = this.buildDefinitions.find(def => {
+      return def.name == buildName;
+    });
+    let latestRun = null;
+    if (!!buildDef) {
+      latestRun = this.getMostRecentResult(buildName);
+      return {
+        buildDef: buildDef,
+        latestRun: latestRun
+      };
+    }
+    return null;
   }
 }

@@ -6,7 +6,7 @@
 </div>
 <h2>Builds</h2>
 <mat-accordion multi="true">
-  <mat-expansion-panel *ngFor="let build of builds">
+  <mat-expansion-panel *ngFor="let build of builds" (opened)="buildOpened(build)" (closed)="buildClosed(build)">
     <mat-expansion-panel-header>
       <span class="build-name">
         {{build.buildDef.name}}

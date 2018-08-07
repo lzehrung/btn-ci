@@ -1,7 +1,6 @@
 export interface IBuildInfo {
   buildDef: BuildDefinition;
   latestRun: BuildResult | null;
-  watching: boolean | undefined;
 }
 
 export class BuildResult {
@@ -61,4 +60,9 @@ export enum BuildManagerEvents {
   EndBuildStep = 'end-build-step',
   StartReload = 'start-reload',
   EndReload = 'end-reload'
+}
+
+export interface IScheduledBuild {
+  buildName: string;
+  job: any;
 }

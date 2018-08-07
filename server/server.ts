@@ -7,8 +7,10 @@ const server = new http.Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
 import { Request, Response } from 'express';
-import { BuildManager } from './buildManager';
+import { BuildManager } from './build-manager';
 import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
+import { IBuildNamespace } from './server-models';
+import { BuildSockets } from './build-sockets';
 
 // settings
 const appName = 'BetterThanNothing CI';
@@ -26,7 +28,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.get('/builds', (req: Request, res: Response) => {
-  var buildInfoObjects = buildMgr.getBuildInfo();
+  var buildInfoObjects = buildMgr.getAllBuildInfo();
   res.json(buildInfoObjects);
   return;
 });
@@ -41,17 +43,9 @@ app.post('/builds/reload', async (req: Request, res: Response) => {
 });
 
 app.get('/builds/:buildName', (req: Request, res: Response) => {
-  var buildDef = buildMgr.findBuildDef(req.params.buildName);
-  var latest = null;
-  if (!!buildDef) {
-    latest = buildMgr.mostRecentLog(req.params.buildName);
-  }
-
-  if (!!buildDef) {
-    res.json({
-      buildDef: buildDef,
-      latestRun: latest
-    });
+  let buildInfo = buildMgr.getBuildInfo(req.params.buildName);
+  if (!!buildInfo) {
+    res.json(buildInfo);
     return;
   } else {
     res.status(404);
@@ -60,15 +54,13 @@ app.get('/builds/:buildName', (req: Request, res: Response) => {
 });
 
 app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
-  var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
-    return def.name == req.params.buildName;
-  });
-  if (!!buildDef) {
-    var latest = buildMgr.mostRecentLog(req.params.buildName);
-    if (!latest || latest.result != BuildStatus.Running) {
-      latest = await buildMgr.startBuild(buildDef, true);
+  let buildName = req.params.buildName;
+  let buildInfo = buildMgr.getBuildInfo(buildName);
+  if (!!buildInfo) {
+    if (!buildInfo.latestRun || buildInfo.latestRun.result != BuildStatus.Running) {
+      let latest = await buildMgr.startBuild(buildInfo.buildDef, true);
       res.json({
-        buildDef: buildDef,
+        buildDef: buildInfo.buildDef,
         latestRun: latest
       });
       return;
@@ -83,15 +75,13 @@ app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
 });
 
 app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
-  var buildDef = buildMgr.buildDefinitions.find((def: BuildDefinition) => {
-    return def.name == req.params.buildName;
-  });
-  if (!!buildDef) {
-    var latest = buildMgr.mostRecentLog(req.params.buildName);
-    if (!latest || latest.result != BuildStatus.Cancelled) {
-      latest = buildMgr.cancelBuild(buildDef.name);
+  let buildName = req.params.buildName;
+  let buildInfo = buildMgr.getBuildInfo(buildName);
+  if (!!buildInfo) {
+    if (!buildInfo.latestRun || buildInfo.latestRun.result != BuildStatus.Running) {
+      let latest = buildMgr.cancelBuild(buildName);
       res.json({
-        buildDef: buildDef,
+        buildDef: buildInfo.buildDef,
         latestRun: latest
       });
       return;
@@ -105,36 +95,9 @@ app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
   }
 });
 
-// socket config
-buildMgr.emitter.on(BuildManagerEvents.StartReload, () => {
-  io.emit(BuildManagerEvents.StartReload);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.EndReload, (builds: BuildDefinition[]) => {
-  io.emit(BuildManagerEvents.EndReload, builds);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
-  io.emit(BuildManagerEvents.StartBuild, buildResult);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
-  io.emit(BuildManagerEvents.EndBuild, buildResult);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.StartBuildStep, (buildResult: BuildResult) => {
-  io.emit(BuildManagerEvents.StartBuildStep, buildResult);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.UpdateBuildStep, (buildResult: BuildResult) => {
-  io.emit(BuildManagerEvents.UpdateBuildStep, buildResult);
-});
-
-buildMgr.emitter.on(BuildManagerEvents.EndBuildStep, (buildResult: BuildResult) => {
-  io.emit(BuildManagerEvents.EndBuildStep, buildResult);
-});
-
 // startup
+const buildSockets = new BuildSockets(io, buildMgr);
+buildSockets.initializeEvents();
 buildMgr.reload();
 
 server.listen(port);

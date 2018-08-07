@@ -1,6 +1,6 @@
 import * as spawn from 'cross-spawn';
 import { BuildDefinition } from './models';
-import { ICheckForChanges } from './checkForChanges';
+import { ICheckForChanges } from './ICheckForChanges.d';
 
 // https://regex101.com/r/P463Ja/1
 const isBehindRegEx = new RegExp('is behind .* by ([0-9]) commit', 'gm');
