@@ -8,8 +8,7 @@ import * as socket from 'socket.io';
 const io = socket(server);
 import { Request, Response } from 'express';
 import { BuildManager } from './build-manager';
-import { BuildDefinition, BuildStatus, BuildManagerEvents, BuildResult } from './models';
-import { IBuildNamespace } from './server-models';
+import { BuildStatus } from './models';
 import { BuildSockets } from './build-sockets';
 
 // settings

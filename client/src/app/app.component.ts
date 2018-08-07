@@ -68,7 +68,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   loadBuilds(): void {
-    this.buildService.getBuilds().subscribe(builds => {
+    this.buildService.getBuilds().subscribe((builds) => {
       this.builds = builds;
       for (let build of this.builds) {
         // if its latest run is currently running, start watching it
@@ -172,12 +172,22 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  backToTop() {
-    window.scrollTo(0, 0);
+  goToBottom(buildInfo: IBuildInfo) {
+    let buildPanel = document.getElementById('build-' + buildInfo.buildDef.name);
+    if (buildPanel) {
+      buildPanel.scrollIntoView(false);
+    }
+  }
+
+  backToTop(buildInfo: IBuildInfo) {
+    let buildPanel = document.getElementById('build-' + buildInfo.buildDef.name);
+    if (buildPanel) {
+      buildPanel.scrollIntoView(true);
+    }
   }
 
   close() {
-    this.expansionPanels.forEach(panel => {
+    this.expansionPanels.forEach((panel) => {
       panel.close();
     });
   }
