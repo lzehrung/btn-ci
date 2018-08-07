@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult, BuildManagerEvents } from '../../../server/models';
 import { BuildService } from 'src/app/build.service';
 import { Socket } from 'ngx-socket-io';
+import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'BetterThanNothing CI';
   emoji = '😉';
   homePageEmojis = ['😉', '😂', '😍', '😆', '😎', '🤔', '🤪', '🤖'];
@@ -34,6 +35,10 @@ export class AppComponent implements OnInit {
       let build = this.findBuild(buildResult.buildDef.name);
       build.latestRun = buildResult;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.socketService.disconnect(true);
   }
 
   chipClass(buildInfo: IBuildInfo) {
