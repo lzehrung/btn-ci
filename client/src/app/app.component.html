@@ -4,10 +4,7 @@
     {{ title }} {{ emoji }}
   </h1>
 </div>
-<h3>
-  Server Controls
-</h3>
-<button mat-raised-button [matMenuTriggerFor]="menu" color="primary" [disabled]="isReloading">Menu</button>
+<button mat-raised-button [matMenuTriggerFor]="menu" color="primary" [disabled]="isReloading">Server Controls</button>
 <mat-menu #menu="matMenu">
   <button *ngIf="!isPaused" (click)="serverPause(true)" mat-menu-item>⏸️ Pause Builds</button>
   <button *ngIf="isPaused" (click)="serverPause(false)" mat-menu-item>▶️ Resume Builds</button>
