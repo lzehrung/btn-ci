@@ -1,4 +1,4 @@
-# BetterThanNothing CI
+# BetterThanNothing CI 🔨
 
 Hosts a simple build system using [Express](https://expressjs.com/), [node-schedule](https://www.npmjs.com/package/node-schedule), [cross-spawn](https://www.npmjs.com/package/cross-spawn), [socket.io](https://socket.io/), and [Angular](https://angular.io/).
 
