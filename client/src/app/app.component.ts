@@ -103,18 +103,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return chipClass;
   }
 
-  loadBuilds(): void {
-    this.buildService.getBuilds().subscribe(builds => {
-      this.builds = builds;
-      for (let build of this.builds) {
-        // if its latest run is currently running, start watching it
-        if (!!build.latest && build.latest.result == BuildStatus.Running) {
-          this.checkBuild(build);
-        }
-      }
-    });
-  }
-
   startBuild(buildInfo: IBuildInfo): void {
     this.buildService.startBuild(buildInfo.definition.name).subscribe(
       (result: BuildResult) => {
@@ -176,15 +164,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   serverPause(pause: boolean): void {}
 
-  goToBottom(buildInfo: IBuildInfo) {
-    let buildPanel = document.getElementById('build-' + buildInfo.definition.name);
+  goToBottom(index: number) {
+    let buildPanel = document.getElementById('build-' + index);
     if (buildPanel) {
       buildPanel.scrollIntoView(false);
     }
   }
 
-  backToTop(buildInfo: IBuildInfo) {
-    let buildPanel = document.getElementById('build-' + buildInfo.definition.name);
+  backToTop(index: number) {
+    let buildPanel = document.getElementById('build-' + index);
     if (buildPanel) {
       buildPanel.scrollIntoView(true);
     }
