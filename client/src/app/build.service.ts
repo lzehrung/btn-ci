@@ -14,7 +14,9 @@ export class BuildService {
   }
 
   startBuild(name: string): Observable<any> {
-    return this.http.post(`builds/${name}/start`, null);
+    return this.http.post(`builds/${name}/start`, null, {
+      responseType: 'text'
+    });
   }
 
   checkBuild(name: string): Observable<IBuildInfo> {
@@ -22,18 +24,26 @@ export class BuildService {
   }
 
   cancelBuild(name: any): Observable<any> {
-    return this.http.post(`builds/${name}/cancel`, null);
+    return this.http.post(`builds/${name}/cancel`, null, {
+      responseType: 'text'
+    });
   }
 
   reload(): Observable<any> {
-    return this.http.post(`builds/reload`, null);
+    return this.http.post(`builds/reload`, null, {
+      responseType: 'text'
+    });
   }
 
   pause(): Observable<any> {
-    return this.http.post(`pause`, null);
+    return this.http.post(`pause`, null, {
+      responseType: 'text'
+    });
   }
 
   resume(): Observable<any> {
-    return this.http.post(`resume`, null);
+    return this.http.post(`resume`, null, {
+      responseType: 'text'
+    });
   }
 }
