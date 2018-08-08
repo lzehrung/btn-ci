@@ -29,7 +29,12 @@ export class AppComponent implements OnInit, OnDestroy {
   isPaused: boolean = false;
   isReloading: boolean = false;
 
-  @ViewChildren(MatExpansionPanel) expansionPanels: QueryList<MatExpansionPanel>;
+  get areButtonsDisabled(): boolean {
+    return this.isPaused || this.isReloading;
+  }
+
+  @ViewChildren(MatExpansionPanel)
+  expansionPanels: QueryList<MatExpansionPanel>;
 
   constructor(private buildService: BuildService, private socketService: Socket) {}
 
@@ -38,7 +43,6 @@ export class AppComponent implements OnInit, OnDestroy {
     const emoji = this.homePageEmojis[emojiIndex];
     this.emoji = emoji;
 
-    // TODO: add reload button, watch for server build reloads, disable interaction until reload complete
     this.socketService.on('welcome', (welcome: IWelcomeInfo) => {
       this.builds = welcome.allBuildInfo;
       this.queuedBuilds = welcome.queuedBuilds;
@@ -49,32 +53,39 @@ export class AppComponent implements OnInit, OnDestroy {
     this.socketService.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
       build.latest = buildResult;
+      console.log('build started', build);
     });
 
     this.socketService.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
       build.latest = buildResult;
+      console.log('build finished', build);
     });
 
     this.socketService.on(BuildManagerEvents.BuildsPaused, () => {
       this.isPaused = true;
+      console.log('future builds paused');
     });
 
     this.socketService.on(BuildManagerEvents.BuildsResumed, () => {
       this.isPaused = false;
+      console.log('future builds resumed');
     });
 
     this.socketService.on(BuildManagerEvents.StartReload, () => {
       this.isReloading = true;
+      console.log('build definitions reloading...');
     });
 
     this.socketService.on(BuildManagerEvents.EndReload, (allInfo: IBuildInfo[]) => {
       this.isReloading = false;
       this.builds = allInfo;
+      console.log('build definitions reloaded', this.builds);
     });
 
     this.socketService.on(BuildManagerEvents.QueueUpdate, (queuedBuilds: string[]) => {
       this.queuedBuilds = queuedBuilds;
+      console.log('build queue updated', this.queuedBuilds);
     });
   }
 
@@ -160,9 +171,23 @@ export class AppComponent implements OnInit, OnDestroy {
     this.socketService.removeAllListeners(eventName);
   }
 
-  reload(): void {}
+  reload(): void {
+    this.buildService.reload().subscribe(() => {
+      console.log('build definition reload requested');
+    });
+  }
 
-  serverPause(pause: boolean): void {}
+  serverPause(pause: boolean): void {
+    if (pause) {
+      this.buildService.pause().subscribe(() => {
+        console.log('build pause requested');
+      });
+    } else {
+      this.buildService.resume().subscribe(() => {
+        console.log('build resume requested');
+      });
+    }
+  }
 
   goToBottom(index: number) {
     let buildPanel = document.getElementById('build-' + index);
@@ -179,7 +204,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   close() {
-    this.expansionPanels.forEach(panel => {
+    this.expansionPanels.forEach((panel) => {
       panel.close();
     });
   }

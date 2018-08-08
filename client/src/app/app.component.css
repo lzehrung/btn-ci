@@ -36,3 +36,11 @@
   background: rgb(120, 120, 255);
   color: black;
 }
+
+.server-message {
+  font-size: 16px;
+}
+
+.server-message mat-progress-spinner {
+  margin-left: 1rem;
+}
