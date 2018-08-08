@@ -1,5 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { BuildDefinition, IBuildInfo, BuildStatus, BuildResult, BuildManagerEvents } from '../../../server/models';
+import {
+  BuildDefinition,
+  IBuildInfo,
+  BuildStatus,
+  BuildResult,
+  BuildManagerEvents,
+  IWelcomeInfo
+} from '../../../server/models';
 import { BuildService } from 'src/app/build.service';
 import { Socket } from 'ngx-socket-io';
 import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
@@ -18,6 +25,9 @@ export class AppComponent implements OnInit, OnDestroy {
   homePageEmojis = ['😉', '😂', '😍', '😆', '😎', '🤔', '🤪', '🤖'];
   miscEmojis = ['🍕', '🍔', '🥓', '💣', '☠️'];
   builds: IBuildInfo[] = [];
+  queuedBuilds: string[] = [];
+  isPaused: boolean = false;
+  isReloading: boolean = false;
 
   @ViewChildren(MatExpansionPanel) expansionPanels: QueryList<MatExpansionPanel>;
 
@@ -28,17 +38,43 @@ export class AppComponent implements OnInit, OnDestroy {
     const emoji = this.homePageEmojis[emojiIndex];
     this.emoji = emoji;
 
-    this.loadBuilds();
-
     // TODO: add reload button, watch for server build reloads, disable interaction until reload complete
+    this.socketService.on('welcome', (welcome: IWelcomeInfo) => {
+      this.builds = welcome.allBuildInfo;
+      this.queuedBuilds = welcome.queuedBuilds;
+      this.isPaused = welcome.isPaused;
+      this.isReloading = welcome.isReloading;
+    });
+
     this.socketService.on(BuildManagerEvents.StartBuild, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
-      build.latestRun = buildResult;
+      build.latest = buildResult;
     });
 
     this.socketService.on(BuildManagerEvents.EndBuild, (buildResult: BuildResult) => {
       let build = this.findBuild(buildResult.buildDef.name);
-      build.latestRun = buildResult;
+      build.latest = buildResult;
+    });
+
+    this.socketService.on(BuildManagerEvents.BuildsPaused, () => {
+      this.isPaused = true;
+    });
+
+    this.socketService.on(BuildManagerEvents.BuildsResumed, () => {
+      this.isPaused = false;
+    });
+
+    this.socketService.on(BuildManagerEvents.StartReload, () => {
+      this.isReloading = true;
+    });
+
+    this.socketService.on(BuildManagerEvents.EndReload, (allInfo: IBuildInfo[]) => {
+      this.isReloading = false;
+      this.builds = allInfo;
+    });
+
+    this.socketService.on(BuildManagerEvents.QueueUpdate, (queuedBuilds: string[]) => {
+      this.queuedBuilds = queuedBuilds;
     });
   }
 
@@ -48,8 +84,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   chipClass(buildInfo: IBuildInfo) {
     let chipClass = '';
-    if (buildInfo.latestRun && buildInfo.latestRun.result) {
-      switch (buildInfo.latestRun.result) {
+    if (buildInfo.latest && buildInfo.latest.result) {
+      switch (buildInfo.latest.result) {
         case BuildStatus.Success:
           chipClass = 'success';
           break;
@@ -68,126 +104,94 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   loadBuilds(): void {
-    this.buildService.getBuilds().subscribe((builds) => {
+    this.buildService.getBuilds().subscribe(builds => {
       this.builds = builds;
       for (let build of this.builds) {
         // if its latest run is currently running, start watching it
-        if (!!build.latestRun && build.latestRun.result == BuildStatus.Running) {
-          this.checkBuild(build.buildDef.name);
+        if (!!build.latest && build.latest.result == BuildStatus.Running) {
+          this.checkBuild(build);
         }
       }
     });
   }
 
-  startBuild(buildName: string): void {
-    let buildInfo = this.findBuild(buildName);
-    if (!!buildInfo) {
-      this.buildService.startBuild(buildName).subscribe(
-        (result: BuildResult) => {
-          let buildInfo = this.findBuild(buildName);
-          buildInfo.latestRun = result;
-        },
-        () => {
-          window.location.reload();
-        }
-      );
-    }
+  startBuild(buildInfo: IBuildInfo): void {
+    this.buildService.startBuild(buildInfo.definition.name).subscribe(
+      (result: BuildResult) => {
+        buildInfo.latest = result;
+      },
+      () => {
+        window.location.reload();
+      }
+    );
   }
 
   findBuild(buildName: string): IBuildInfo {
     let matching = this.builds.find((info: IBuildInfo) => {
-      return info.buildDef.name == buildName;
+      return info.definition.name == buildName;
     });
     return matching;
   }
 
-  checkBuild(buildName: string): void {
-    let buildInfo = this.findBuild(buildName);
-    if (!!buildInfo) {
-      this.buildService.checkBuild(buildName).subscribe(
-        (buildResult: IBuildInfo) => {
-          if (!!buildResult) {
-            let buildInfo = this.findBuild(buildName);
-            buildInfo.latestRun = buildResult.latestRun;
-          }
-        },
-        () => {
-          window.location.reload();
+  checkBuild(buildInfo: IBuildInfo): void {
+    this.buildService.checkBuild(buildInfo.definition.name).subscribe(
+      (buildResult: IBuildInfo) => {
+        if (!!buildResult) {
+          buildInfo.latest = buildResult.latest;
         }
-      );
-    }
+      },
+      () => {
+        window.location.reload();
+      }
+    );
   }
 
-  cancelBuild(buildName: string): void {
-    let buildInfo = this.findBuild(buildName);
-    if (!!buildInfo) {
-      this.buildService.cancelBuild(buildName).subscribe((buildInfo: IBuildInfo) => {
-        if (buildInfo.latestRun.result == BuildStatus.Cancelled) {
-          console.log('cancelled build');
-        }
-      });
-    }
+  cancelBuild(buildInfo: IBuildInfo): void {
+    this.buildService.cancelBuild(buildInfo.definition.name).subscribe((buildInfo: IBuildInfo) => {
+      if (buildInfo.latest.result == BuildStatus.Cancelled) {
+        console.log('cancelled build');
+      }
+    });
   }
 
   isRunning(buildInfo: IBuildInfo): boolean {
-    return !!buildInfo.latestRun && buildInfo.latestRun.result == BuildStatus.Running;
+    return !!buildInfo.latest && buildInfo.latest.result == BuildStatus.Running;
   }
 
   buildOpened(build: IBuildInfo) {
     // subscribe to this build's events
-    this.socketService.on(
-      `${BuildManagerEvents.StartBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
-      (buildResult: BuildResult) => {
-        let build = this.findBuild(buildResult.buildDef.name);
-        build.latestRun = buildResult;
-      }
-    );
-
-    this.socketService.on(
-      `${BuildManagerEvents.UpdateBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
-      (buildResult: BuildResult) => {
-        let build = this.findBuild(buildResult.buildDef.name);
-        build.latestRun = buildResult;
-      }
-    );
-
-    this.socketService.on(
-      `${BuildManagerEvents.EndBuildStep}-${encodeURIComponent(build.buildDef.name)}`,
-      (buildResult: BuildResult) => {
-        let build = this.findBuild(buildResult.buildDef.name);
-        build.latestRun = buildResult;
-      }
-    );
+    let eventName = `${BuildManagerEvents.BuildStep}-${encodeURIComponent(build.definition.name)}`;
+    this.socketService.on(eventName, (buildResult: BuildResult) => {
+      let build = this.findBuild(buildResult.buildDef.name);
+      build.latest = buildResult;
+    });
   }
 
   buildClosed(build: IBuildInfo) {
-    this.socketService.removeAllListeners(
-      `${BuildManagerEvents.StartBuildStep}-${encodeURIComponent(build.buildDef.name)}`
-    );
-    this.socketService.removeAllListeners(
-      `${BuildManagerEvents.UpdateBuildStep}-${encodeURIComponent(build.buildDef.name)}`
-    );
-    this.socketService.removeAllListeners(
-      `${BuildManagerEvents.EndBuildStep}-${encodeURIComponent(build.buildDef.name)}`
-    );
+    let eventName = `${BuildManagerEvents.BuildStep}-${encodeURIComponent(build.definition.name)}`;
+    this.socketService.removeAllListeners(eventName);
   }
 
+  reload(): void {}
+
+  serverPause(pause: boolean): void {}
+
   goToBottom(buildInfo: IBuildInfo) {
-    let buildPanel = document.getElementById('build-' + buildInfo.buildDef.name);
+    let buildPanel = document.getElementById('build-' + buildInfo.definition.name);
     if (buildPanel) {
       buildPanel.scrollIntoView(false);
     }
   }
 
   backToTop(buildInfo: IBuildInfo) {
-    let buildPanel = document.getElementById('build-' + buildInfo.buildDef.name);
+    let buildPanel = document.getElementById('build-' + buildInfo.definition.name);
     if (buildPanel) {
       buildPanel.scrollIntoView(true);
     }
   }
 
   close() {
-    this.expansionPanels.forEach((panel) => {
+    this.expansionPanels.forEach(panel => {
       panel.close();
     });
   }

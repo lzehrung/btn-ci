@@ -1,6 +1,6 @@
 export interface IBuildInfo {
-  buildDef: BuildDefinition;
-  latestRun: BuildResult | null;
+  definition: BuildDefinition;
+  latest: BuildResult | null;
 }
 
 export class BuildResult {
@@ -55,14 +55,22 @@ export class BuildDefFile {
 export enum BuildManagerEvents {
   StartBuild = 'start-build',
   EndBuild = 'end-build',
-  StartBuildStep = 'start-build-step',
-  UpdateBuildStep = 'update-build-step',
-  EndBuildStep = 'end-build-step',
+  BuildStep = 'build-step',
   StartReload = 'start-reload',
-  EndReload = 'end-reload'
+  EndReload = 'end-reload',
+  QueueUpdate = 'queue-update',
+  BuildsPaused = 'builds-paused',
+  BuildsResumed = 'builds-resumed'
 }
 
 export interface IScheduledBuild {
   buildName: string;
   job: any;
+}
+
+export interface IWelcomeInfo {
+  allBuildInfo: IBuildInfo[];
+  queuedBuilds: string[];
+  isPaused: boolean;
+  isReloading: boolean;
 }

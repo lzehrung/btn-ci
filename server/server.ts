@@ -27,13 +27,13 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.get('/builds', (req: Request, res: Response) => {
-  var buildInfoObjects = buildMgr.getAllBuildInfo();
+  var buildInfoObjects = buildMgr.buildInfo;
   res.json(buildInfoObjects);
   return;
 });
 
 app.post('/builds/reload', async (req: Request, res: Response) => {
-  if (buildMgr.runningBuilds.length) {
+  if (buildMgr.runningBuilds.length < 1) {
     await buildMgr.reload();
     res.status(200);
   } else {
@@ -41,8 +41,8 @@ app.post('/builds/reload', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/builds/:buildName', (req: Request, res: Response) => {
-  let buildInfo = buildMgr.getBuildInfo(req.params.buildName);
+app.get('/builds/:buildName', async (req: Request, res: Response) => {
+  let buildInfo = await buildMgr.findBuildInfo(req.params.buildName);
   if (!!buildInfo) {
     res.json(buildInfo);
     return;
@@ -54,14 +54,15 @@ app.get('/builds/:buildName', (req: Request, res: Response) => {
 
 app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
   let buildName = req.params.buildName;
-  let buildInfo = buildMgr.getBuildInfo(buildName);
+  let buildInfo = await buildMgr.findBuildInfo(buildName);
   if (!!buildInfo) {
-    if (!buildInfo.latestRun || buildInfo.latestRun.result != BuildStatus.Running) {
-      let latest = await buildMgr.startBuild(buildInfo.buildDef, true);
-      res.json({
-        buildDef: buildInfo.buildDef,
-        latestRun: latest
-      });
+    if (!buildInfo.latest || buildInfo.latest.result != BuildStatus.Running) {
+      let latestInfo = await buildMgr.startBuild(buildInfo, true);
+      if (!!latestInfo) {
+        res.json(latestInfo);
+      } else {
+        res.sendStatus(200);
+      }
       return;
     } else {
       res.sendStatus(400);
@@ -73,16 +74,17 @@ app.post('/builds/:buildName/start', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
+app.post('/builds/:buildName/cancel', async (req: Request, res: Response) => {
   let buildName = req.params.buildName;
-  let buildInfo = buildMgr.getBuildInfo(buildName);
+  let buildInfo = await buildMgr.findBuildInfo(buildName);
   if (!!buildInfo) {
-    if (!buildInfo.latestRun || buildInfo.latestRun.result != BuildStatus.Running) {
-      let latest = buildMgr.cancelBuild(buildName);
-      res.json({
-        buildDef: buildInfo.buildDef,
-        latestRun: latest
-      });
+    if (!buildInfo.latest || buildInfo.latest.result != BuildStatus.Running) {
+      let latestInfo = buildMgr.cancelBuild(buildName);
+      if (!!latestInfo) {
+        res.json(latestInfo);
+      } else {
+        res.sendStatus(200);
+      }
       return;
     } else {
       res.sendStatus(400);
@@ -92,6 +94,16 @@ app.post('/builds/:buildName/cancel', (req: Request, res: Response) => {
     res.sendStatus(404);
     return;
   }
+});
+
+app.post('/pause', (req: Request, res: Response) => {
+  buildMgr.pause();
+  res.sendStatus(200);
+});
+
+app.post('/resume', (req: Request, res: Response) => {
+  buildMgr.resume();
+  res.sendStatus(200);
 });
 
 // startup
