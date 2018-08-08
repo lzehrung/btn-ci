@@ -9,7 +9,10 @@ Features:
 - Build only on new git commits (optional)
 - Email notifications on failure
 - Build result log files
+- Build definition reloading
+- New build run pausing
 - Maximum concurrent builds
+- Queue system when max running builds exceeded
 
 #### Why?
 
