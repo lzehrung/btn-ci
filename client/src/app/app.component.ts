@@ -1,3 +1,4 @@
+import { BuildDefinitionDialogComponent, IDialogData } from './build-definition-dialog/build-definition-dialog.component';
 import { Component, OnInit } from '@angular/core';
 import {
   BuildDefinition,
@@ -13,6 +14,7 @@ import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
 import { ViewChildren } from '@angular/core';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { QueryList } from '@angular/core';
+import { MatDialog, MAT_DIALOG_DATA } from '@angular/material';
 
 @Component({
   selector: 'app-root',
@@ -33,10 +35,9 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.isPaused || this.isReloading;
   }
 
-  @ViewChildren(MatExpansionPanel)
-  expansionPanels: QueryList<MatExpansionPanel>;
+  @ViewChildren(MatExpansionPanel) expansionPanels: QueryList<MatExpansionPanel>;
 
-  constructor(private buildService: BuildService, private socketService: Socket) {}
+  constructor(private buildService: BuildService, private socketService: Socket, public dialog: MatDialog) {}
 
   ngOnInit(): void {
     const emojiIndex = Math.floor(Math.random() * this.homePageEmojis.length);
@@ -204,8 +205,21 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   close() {
-    this.expansionPanels.forEach((panel) => {
+    this.expansionPanels.forEach(panel => {
       panel.close();
+    });
+  }
+
+  viewBuildDef(buildInfo: IBuildInfo) {
+    // use the definition included in the build result if available, otherwise the info's definition
+    let definition = !!buildInfo.latest ? buildInfo.latest.buildDef : buildInfo.definition;
+    let json = JSON.stringify(definition, null, 2);
+    let data: IDialogData = {
+      buildName: buildInfo.definition.name,
+      json: json
+    };
+    this.dialog.open(BuildDefinitionDialogComponent, {
+      data: data
     });
   }
 }

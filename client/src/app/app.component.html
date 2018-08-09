@@ -25,8 +25,7 @@
 </ng-container>
 <h2>Builds</h2>
 <mat-accordion multi="false">
-  <mat-expansion-panel id="{{'build-' + index}}" *ngFor="let build of builds; index as index" (opened)="buildOpened(build)"
-    (closed)="buildClosed(build)">
+  <mat-expansion-panel id="{{'build-' + index}}" *ngFor="let build of builds; index as index" (opened)="buildOpened(build)" (closed)="buildClosed(build)">
     <mat-expansion-panel-header>
       <span class="build-name">
         {{build.definition.name}}
@@ -40,8 +39,6 @@
         </mat-chip>
       </mat-chip-list>
     </mat-expansion-panel-header>
-    <button mat-raised-button (click)="checkBuild(build)" [disabled]="areButtonsDisabled" color="primary">Refresh</button>
-    &nbsp;&nbsp;
     <ng-container *ngIf="!isRunning(build)">
       <button mat-raised-button (click)="startBuild(build)" [disabled]="areButtonsDisabled" color="accent">Start</button>
     </ng-container>
@@ -49,6 +46,10 @@
       <button mat-raised-button (click)="cancelBuild(build)" [disabled]="areButtonsDisabled" color="warn">Cancel</button>
     </ng-container>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button mat-raised-button (click)="viewBuildDef(build)" color="primary">View Build Definition</button>
+    &nbsp;&nbsp;
+    <button mat-raised-button (click)="checkBuild(build)" [disabled]="areButtonsDisabled" color="primary">Refresh</button>
+    &nbsp;&nbsp;
     <button mat-raised-button (click)="goToBottom(index)" color="primary">Go to bottom</button>
     <ng-container *ngIf="build.latest">
       <div>
