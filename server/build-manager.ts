@@ -23,7 +23,6 @@ import {
 } from './models';
 import { checkGitForChanges } from './check-for-git-changes';
 import { BuildProcess } from './server-models';
-import { readdir } from 'fs';
 import { Queue } from './queue';
 
 const sendGridApiKeyFilename = 'sendgrid-key.json';
@@ -224,7 +223,6 @@ export class BuildManager {
    */
   async loadBuildDefFromFile(fileName: string): Promise<BuildDefinition | null> {
     let filePath = path.join(this.configDir, fileName);
-    console.log(`loading build def: ${filePath}`);
     let buildDefFile = null;
     try {
       buildDefFile = await readFile(filePath, 'utf8');
