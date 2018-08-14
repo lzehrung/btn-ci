@@ -534,7 +534,7 @@ export class BuildManager {
     await this.writeLogFile(buildDef, buildResult);
     this.emitter.emit(BuildManagerEvents.EndBuild, buildResult);
 
-    let serverLinkUrl = this.serverConfig.url + '/' + this.serverConfig.port;
+    let serverLinkUrl = this.serverConfig.url + ':' + this.serverConfig.port + '/';
 
     if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
       this.sendEmail(
