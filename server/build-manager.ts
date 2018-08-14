@@ -22,14 +22,15 @@ import {
   IScheduledBuild
 } from './models';
 import { checkGitForChanges } from './check-for-git-changes';
-import { BuildProcess } from './server-models';
+import { BuildProcess, IServerBuildInfo, IBuildResultFile } from './server-models';
 import { Queue } from './queue';
+import { MailData } from '@sendgrid/helpers/classes/mail';
 
 const sendGridApiKeyFilename = 'sendgrid-key.json';
 
 export class BuildManager {
   public sendGridKey: string = '';
-  public buildInfo: IBuildInfo[] = [];
+  public buildInfo: IServerBuildInfo[] = [];
   public buildDefinitionFiles: BuildDefFile[] = [];
   public scheduledBuilds: IScheduledBuild[] = [];
   public buildProcesses: BuildProcess[] = [];
@@ -108,39 +109,7 @@ export class BuildManager {
   async getMostRecentLogFile(buildName: string): Promise<BuildResult | null> {
     let buildResult = null;
     try {
-      let logFiles = await readDir(this.logDir);
-      let buildLogFiles = logFiles.filter((filename: string) => {
-        let filenameParts = filename.split('_');
-        return filenameParts.length === 3 && filenameParts[0] == buildName;
-      });
-      let filesWithDate = buildLogFiles.map((file: string) => {
-        let fileDate = null;
-        let filenameParts = file.split('_');
-        let dateParts = (<string>filenameParts[1]).split('-');
-        let timeParts = (<string>filenameParts[2]).split('-');
-        if (dateParts.length === 3 && timeParts.length === 3) {
-          fileDate = new Date(
-            parseInt(dateParts[0]),
-            parseInt(dateParts[1]),
-            parseInt(dateParts[2]),
-            parseInt(timeParts[0]),
-            parseInt(timeParts[1]),
-            parseInt(timeParts[2])
-          );
-        }
-        return {
-          filename: file,
-          date: fileDate
-        };
-      });
-      let filesOrderedByDate = filesWithDate
-        .filter(fileWithDate => {
-          return !!fileWithDate.date;
-        })
-        .sort((fileA, fileB) => {
-          return (<Date>fileB.date).getTime() - (<Date>fileA.date).getTime();
-        });
-
+      let filesOrderedByDate = await this.getAllLogFilesFor(buildName);
       if (!!filesOrderedByDate && filesOrderedByDate.length > 0) {
         let filePath = path.join(this.logDir, filesOrderedByDate[0].filename);
         let fileContent = await readFile(filePath, 'utf8');
@@ -150,6 +119,43 @@ export class BuildManager {
       console.log('error searching for most recent build result file', error);
     }
     return buildResult;
+  }
+
+  /** Gets all result files for the given build name ordered most recent to oldest. */
+  async getAllLogFilesFor(buildName: string): Promise<IBuildResultFile[]> {
+    let logFiles = await readDir(this.logDir);
+    let buildLogFiles = logFiles.filter((filename: string) => {
+      let filenameParts = filename.split('_');
+      return filenameParts.length === 3 && filenameParts[0] == buildName;
+    });
+    let filesWithDate = buildLogFiles.map((file: string) => {
+      let fileDate = null;
+      let filenameParts = file.split('_');
+      let dateParts = (<string>filenameParts[1]).split('-');
+      let timeParts = (<string>filenameParts[2]).split('-');
+      if (dateParts.length === 3 && timeParts.length === 3) {
+        fileDate = new Date(
+          parseInt(dateParts[0]),
+          parseInt(dateParts[1]),
+          parseInt(dateParts[2]),
+          parseInt(timeParts[0]),
+          parseInt(timeParts[1]),
+          parseInt(timeParts[2])
+        );
+      }
+      return {
+        filename: file,
+        date: fileDate
+      };
+    });
+    let filesOrderedByDate = filesWithDate
+      .filter(fileWithDate => {
+        return !!fileWithDate.date;
+      })
+      .sort((fileA, fileB) => {
+        return (<Date>fileB.date).getTime() - (<Date>fileA.date).getTime();
+      });
+    return filesOrderedByDate;
   }
 
   /** Cancels any currently scheduled builds, loads all build definitions, loads the SendGrid API key, and schedules builds.
@@ -236,8 +242,10 @@ export class BuildManager {
     if (!!buildDef && buildDef.name && buildDef.steps && buildDef.directory) {
       let existingInfo = await this.findBuildInfo(buildDef.name);
       if (!!existingInfo) {
+        // update the existing build definition
         existingInfo.definition = buildDef;
       } else {
+        // add the new build definition
         let latestLogFileResult = await this.getMostRecentLogFile(buildDef.name);
         this.buildInfo.push({
           definition: buildDef,
@@ -347,9 +355,9 @@ export class BuildManager {
     let buildResult = null;
     if (shouldRun) {
       // start build
-      console.log(`starting build: ${buildName}`);
+      console.log(`starting '${buildName}'...`);
       buildResult = new BuildResult(buildName, buildInfo.definition);
-      buildResult.log.push(new LogMessage(`Starting build ${buildName}...`));
+      buildResult.log.push(new LogMessage(`Starting build '${buildName}'...`));
 
       buildInfo.latest = buildResult;
 
@@ -522,8 +530,10 @@ export class BuildManager {
     if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
       this.sendEmail(
         buildDef,
+        buildResult,
         `${buildDef.name} Build Failed 😭`,
-        `<h2>Build Log</h2><pre>${JSON.stringify(buildResult, null, 2)}</pre>`
+        `<h3>Result: ${buildResult.result}</h3>
+        <h4>See the attachment for a full build log.</h4>`
       );
     }
     if (this.isReloadScheduled) {
@@ -535,9 +545,7 @@ export class BuildManager {
 
   async writeLogFile(buildDef: BuildDefinition, buildResult: BuildResult): Promise<void> {
     try {
-      let last = new Date(buildResult.lastUpdated);
-      let logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
-        1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
+      let logFileName = this.createLogFileName(buildDef, buildResult);
       let contents = JSON.stringify(buildResult, null, 2);
       let logFilePath = path.join(this.logDir, logFileName);
 
@@ -551,8 +559,15 @@ export class BuildManager {
     }
   }
 
-  private async ensureFileDirectoryExistence(filePath: string): Promise<void> {
-    let directory = path.dirname(filePath);
+  private createLogFileName(buildDef: BuildDefinition, buildResult: BuildResult): string {
+    let last = new Date(buildResult.lastUpdated);
+    let logFileName = `${buildDef.name}_${last.getUTCFullYear()}-${last.getUTCMonth() +
+      1}-${last.getUTCDate()}_${last.getUTCHours()}-${last.getUTCMinutes()}-${last.getUTCSeconds()}.json`;
+    return logFileName;
+  }
+
+  private async ensureFilepathExistence(filepath: string): Promise<void> {
+    let directory = path.dirname(filepath);
     await this.ensureDirectoryExistence(directory);
   }
 
@@ -563,16 +578,27 @@ export class BuildManager {
     await mkDir(directory);
   }
 
-  sendEmail(buildDef: BuildDefinition, subject: string, htmlMessage: string): void {
+  sendEmail(buildDef: BuildDefinition, buildResult: BuildResult, subject: string, htmlMessage: string): void {
     if (!!this.sendGridKey && !!buildDef.emailTo) {
       console.log('sending email...');
+
+      let attachmentContent = Buffer.from(JSON.stringify(buildDef, null, 2)).toString('base64');
+      let attachmentName = this.createLogFileName(buildDef, buildResult);
       try {
         sgMail.setApiKey(this.sendGridKey);
-        const msg = {
+        const msg: MailData = {
           to: buildDef.emailTo,
           from: !!buildDef.emailFrom ? buildDef.emailFrom : 'btn-ci@internetland.org',
           subject: subject,
-          html: htmlMessage
+          html: htmlMessage,
+          attachments: [
+            {
+              content: attachmentContent,
+              filename: attachmentName,
+              type: 'plain/text',
+              disposition: 'attachment'
+            }
+          ]
         };
         sgMail.send(msg);
       } catch (err) {

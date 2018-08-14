@@ -1,20 +1,16 @@
-import { BuildDefinitionDialogComponent, IDialogData } from './build-definition-dialog/build-definition-dialog.component';
-import { Component, OnInit } from '@angular/core';
 import {
-  BuildDefinition,
-  IBuildInfo,
-  BuildStatus,
-  BuildResult,
-  BuildManagerEvents,
-  IWelcomeInfo
-} from '../../../server/models';
+  BuildDefinitionDialogComponent,
+  IDialogData
+} from './build-definition-dialog/build-definition-dialog.component';
+import { Component, OnInit } from '@angular/core';
+import { IBuildInfo, BuildStatus, BuildResult, BuildManagerEvents, IWelcomeInfo } from '../../../server/models';
 import { BuildService } from 'src/app/build.service';
 import { Socket } from 'ngx-socket-io';
 import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
 import { ViewChildren } from '@angular/core';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { QueryList } from '@angular/core';
-import { MatDialog, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialog } from '@angular/material';
 
 @Component({
   selector: 'app-root',
@@ -35,7 +31,8 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.isPaused || this.isReloading;
   }
 
-  @ViewChildren(MatExpansionPanel) expansionPanels: QueryList<MatExpansionPanel>;
+  @ViewChildren(MatExpansionPanel)
+  expansionPanels: QueryList<MatExpansionPanel>;
 
   constructor(private buildService: BuildService, private socketService: Socket, public dialog: MatDialog) {}
 
@@ -191,6 +188,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   goToBottom(index: number) {
+    let buildLogContainer = document.getElementById('build-log-container-' + index);
+    if (buildLogContainer) {
+      buildLogContainer.scrollTop = buildLogContainer.scrollHeight;
+    }
     let buildPanel = document.getElementById('build-' + index);
     if (buildPanel) {
       buildPanel.scrollIntoView(false);
@@ -198,6 +199,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   backToTop(index: number) {
+    let buildLogContainer = document.getElementById('build-log-container-' + index);
+    if (buildLogContainer) {
+      buildLogContainer.scrollTop = 0;
+    }
     let buildPanel = document.getElementById('build-' + index);
     if (buildPanel) {
       buildPanel.scrollIntoView(true);

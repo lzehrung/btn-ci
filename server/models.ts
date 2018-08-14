@@ -56,11 +56,12 @@ export enum BuildManagerEvents {
   StartBuild = 'start-build',
   EndBuild = 'end-build',
   BuildStep = 'build-step',
+  BuildLog = 'build-log',
   StartReload = 'start-reload',
   EndReload = 'end-reload',
   QueueUpdate = 'queue-update',
   BuildsPaused = 'builds-paused',
-  BuildsResumed = 'builds-resumed'
+  BuildsResumed = 'builds-resumed'  
 }
 
 export interface IScheduledBuild {

@@ -55,24 +55,26 @@
       <div>
         <h3>Latest Build</h3>
         <h4>{{build.latest.lastUpdated | date:'yyyy-MM-dd h:mm:ss a' }} ({{build.latest.result}}):</h4>
-        <table>
-          <thead class="table-header">
-            <tr>
-              <td class="time-col">Time</td>
-              <td class="step-col">Step</td>
-              <td>Message</td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let line of build.latest.log">
-              <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm:ss a'}}</td>
-              <td class="step-col">{{line.command}}</td>
-              <td>
-                <pre>{{line.message}}</pre>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="{{'build-log-container-' + index}}" class="build-logs">
+          <table>
+            <thead class="table-header">
+              <tr>
+                <td class="time-col">Time</td>
+                <td class="step-col">Step</td>
+                <td>Message</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of build.latest.log">
+                <td class="time-col">{{line.time | date:'yyyy-MM-dd h:mm:ss a'}}</td>
+                <td class="step-col">{{line.command}}</td>
+                <td>
+                  <pre>{{line.message}}</pre>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div>
           <button mat-raised-button (click)="backToTop(index)" color="primary">Back to top</button>
           &nbsp;&nbsp;

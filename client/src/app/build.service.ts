@@ -14,17 +14,17 @@ export class BuildService {
   }
 
   startBuild(name: string): Observable<any> {
-    return this.http.post(`builds/${name}/start`, null, {
+    return this.http.post(`builds/${encodeURIComponent(name)}/start`, null, {
       responseType: 'text'
     });
   }
 
   checkBuild(name: string): Observable<IBuildInfo> {
-    return this.http.get<IBuildInfo>(`builds/${name}`);
+    return this.http.get<IBuildInfo>(`builds/${encodeURIComponent(name)}`);
   }
 
   cancelBuild(name: any): Observable<any> {
-    return this.http.post(`builds/${name}/cancel`, null, {
+    return this.http.post(`builds/${encodeURIComponent(name)}/cancel`, null, {
       responseType: 'text'
     });
   }
