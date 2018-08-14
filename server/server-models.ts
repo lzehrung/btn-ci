@@ -1,6 +1,14 @@
 import { IBuildInfo, BuildResult } from './models';
 import { ChildProcess } from "child_process";
 
+export interface IServerConfig {
+  url: string;
+  port: number;
+  definitionDir: string;
+  logDir: string;
+  maxConcurrentBuilds: number;
+}
+
 export class BuildProcess {
   constructor(public buildName: string, public process: ChildProcess) {}
 }

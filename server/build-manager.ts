@@ -22,7 +22,7 @@ import {
   IScheduledBuild
 } from './models';
 import { checkGitForChanges } from './check-for-git-changes';
-import { BuildProcess, IServerBuildInfo, IBuildResultFile } from './server-models';
+import { BuildProcess, IServerBuildInfo, IBuildResultFile, IServerConfig } from './server-models';
 import { Queue } from './queue';
 import { MailData } from '@sendgrid/helpers/classes/mail';
 
@@ -35,8 +35,15 @@ export class BuildManager {
   public scheduledBuilds: IScheduledBuild[] = [];
   public buildProcesses: BuildProcess[] = [];
   public readonly emitter = new EventEmitter();
+  public configDir: string = '';
+  public logDir: string = '';
+  public maxConcurrentBuilds: number = 3;
 
-  constructor(public configDir: string, public logDir: string, public maxConcurrentBuilds: number = 3) {}
+  constructor(private serverConfig: IServerConfig) {
+    this.configDir = serverConfig.definitionDir;
+    this.logDir = serverConfig.logDir;
+    this.maxConcurrentBuilds = serverConfig.maxConcurrentBuilds;
+  }
 
   get buildDefinitions(): BuildDefinition[] {
     return this.buildInfo.map(info => {
@@ -527,13 +534,16 @@ export class BuildManager {
     await this.writeLogFile(buildDef, buildResult);
     this.emitter.emit(BuildManagerEvents.EndBuild, buildResult);
 
+    let serverLinkUrl = this.serverConfig.url + '/' + this.serverConfig.port;
+
     if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
       this.sendEmail(
         buildDef,
         buildResult,
         `${buildDef.name} Build Failed 😭`,
         `<h3>Result: ${buildResult.result}</h3>
-        <h4>See the attachment for a full build log.</h4>`
+        <h4>See the attachment for a full build log.</h4>
+        <h4>To see the most recent build log in a browser, go to <a href="${serverLinkUrl}">${serverLinkUrl}</a>.</h4>`
       );
     }
     if (this.isReloadScheduled) {
