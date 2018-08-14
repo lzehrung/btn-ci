@@ -582,7 +582,7 @@ export class BuildManager {
     if (!!this.sendGridKey && !!buildDef.emailTo) {
       console.log('sending email...');
 
-      let attachmentContent = Buffer.from(JSON.stringify(buildDef, null, 2)).toString('base64');
+      let attachmentContent = Buffer.from(JSON.stringify(buildResult, null, 2)).toString('base64');
       let attachmentName = this.createLogFileName(buildDef, buildResult);
       try {
         sgMail.setApiKey(this.sendGridKey);
