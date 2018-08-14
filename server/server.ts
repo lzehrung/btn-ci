@@ -6,21 +6,29 @@ import * as http from 'http';
 const server = new http.Server(app);
 import * as socket from 'socket.io';
 const io = socket(server);
+
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { Request, Response } from 'express';
 import { BuildManager } from './build-manager';
 import { BuildStatus } from './models';
 import { BuildSockets } from './build-sockets';
+import { IServerConfig } from './server-models';
 
 // settings
 const appName = 'BetterThanNothing CI';
-const port = 3000;
-const configDir = process.cwd() + '\\definitions';
-const logDir = process.cwd() + '\\logs';
-const buildMgr = new BuildManager(configDir, logDir);
+const serverConfig = <IServerConfig>JSON.parse(fs.readFileSync(path.join(process.cwd() + '\\serverConfig.json'), { encoding: 'utf8' }));
+serverConfig.port = serverConfig.port || 3000;
+serverConfig.definitionDir = serverConfig.definitionDir || process.cwd() + '\\definitions';
+serverConfig.logDir = serverConfig.logDir || process.cwd() + '\\logs';
+serverConfig.maxConcurrentBuilds = serverConfig.maxConcurrentBuilds || 3;
 
+const buildMgr = new BuildManager(serverConfig);
+
+// http configuration
 app.use(express.static('..\\client\\dist\\client'));
 
-// http routes
 app.get('/', (req: Request, res: Response) => {
   res.sendFile('index.html');
   return;
@@ -111,5 +119,5 @@ const buildSockets = new BuildSockets(io, buildMgr);
 buildSockets.initializeEvents();
 buildMgr.reload();
 
-server.listen(port);
-console.log(`${appName} running! http://localhost:${port}`);
+server.listen(serverConfig.port);
+console.log(`${appName} running! http://localhost:${serverConfig.port}`);

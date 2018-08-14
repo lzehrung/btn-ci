@@ -1,0 +1,7 @@
+{
+    "url": "http://lzehru1w10v.cronustechnologies.com",
+    "port": 3000,
+    "definitionDir": "C:\\bitbucket\\btn-ci\\server\\definitions",
+    "logDir": "C:\\bitbucket\\btn-ci\\server\\logs",
+    "maxConcurrentBuilds": 3
+}
