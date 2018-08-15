@@ -1,2 +1,3 @@
+/// <reference path="globals/reflect-metadata/index.d.ts" />
 /// <reference path="globals/socket.io/index.d.ts" />
-declare module 'express-async-await';
+/// <reference path="globals/sqlite3/index.d.ts" />
