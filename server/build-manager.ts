@@ -308,7 +308,7 @@ export class BuildManager {
           if (!!buildProc.process) {
             try {
               buildProc.process.kill();
-            } catch (error) {}
+            } catch (error) { }
           }
         }
       }
@@ -323,7 +323,7 @@ export class BuildManager {
    * @param buildInfo the build definition to use
    * @param force indicates that this build should start now even if it has a schedule
    */
-  async startBuild(buildInfo: IBuildInfo, force: boolean | null = null): Promise<IBuildInfo | null> {
+  async startBuild(buildInfo: IBuildInfo, force?: boolean): Promise<IBuildInfo | null> {
     if (this.isPaused) {
       return null;
     }
@@ -335,17 +335,16 @@ export class BuildManager {
       return null;
     }
 
-    let buildName = buildInfo.definition.name;
+    const buildName = buildInfo.definition.name;
 
-    //let latestRun = await this.getMostRecentResult(buildName);
     if (!!buildInfo.latest && buildInfo.latest.result == BuildStatus.Running) {
       return buildInfo;
     }
 
     // reload build def from file in case steps have changed
-    let buildDefFile = this.findBuildDefFile(buildName);
+    const buildDefFile = this.findBuildDefFile(buildName);
     if (!!buildDefFile) {
-      let reloadedBuildDef = await this.loadBuildDefFromFile(buildDefFile.fileName);
+      const reloadedBuildDef = await this.loadBuildDefFromFile(buildDefFile.fileName);
       if (!!reloadedBuildDef) {
         buildInfo.definition = reloadedBuildDef;
       }
@@ -357,13 +356,14 @@ export class BuildManager {
       hasUnbuiltChanges = checkGitForChanges(buildInfo.definition);
     }
 
-    // run if forcing a build (ie from 'start' button on client) or if behind
+    // run if forcing a build (i.e. from 'start' button on client) or if behind
     let shouldRun = !!force || hasUnbuiltChanges;
     let buildResult = null;
     if (shouldRun) {
       // start build
       console.log(`starting '${buildName}'...`);
-      buildResult = new BuildResult(buildName, buildInfo.definition);
+      const previousStatus = !!buildInfo.latest ? buildInfo.latest.result : null;
+      buildResult = new BuildResult(buildName, buildInfo.definition, previousStatus);
       buildResult.log.push(new LogMessage(`Starting build '${buildName}'...`));
 
       buildInfo.latest = buildResult;
@@ -536,16 +536,29 @@ export class BuildManager {
 
     let serverLinkUrl = this.serverConfig.url + ':' + this.serverConfig.port + '/';
 
-    if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
+    const isBuildIssueResolved = buildResult.result == BuildStatus.Success
+      && (buildResult.previousResult == BuildStatus.Failed || buildResult.previousResult == BuildStatus.Unstable);
+
+    if (isBuildIssueResolved) {
+      this.sendEmail(
+        buildDef,
+        buildResult,
+        `${buildDef.name} Build Fixed! 😃👍`,
+        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult}` : ''}</h3>
+        <h4>See the attachment for a full build log.</h4>
+        <h4>To see the most recent build log in a browser, go to <a href="${serverLinkUrl}">${serverLinkUrl}</a>.</h4>`
+      );
+    } else if (buildResult.result == BuildStatus.Failed || buildResult.result == BuildStatus.Unstable) {
       this.sendEmail(
         buildDef,
         buildResult,
         `${buildDef.name} Build Failed 😭`,
-        `<h3>Result: ${buildResult.result}</h3>
+        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult}` : ''}</h3>
         <h4>See the attachment for a full build log.</h4>
         <h4>To see the most recent build log in a browser, go to <a href="${serverLinkUrl}">${serverLinkUrl}</a>.</h4>`
       );
     }
+
     if (this.isReloadScheduled) {
       await this.reload();
     } else {
