@@ -544,7 +544,7 @@ export class BuildManager {
         buildDef,
         buildResult,
         `${buildDef.name} Build Fixed! 😃👍`,
-        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult}` : ''}</h3>
+        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult})` : ''}</h3>
         <h4>See the attachment for a full build log.</h4>
         <h4>To see the most recent build log in a browser, go to <a href="${serverLinkUrl}">${serverLinkUrl}</a>.</h4>`
       );
@@ -553,7 +553,7 @@ export class BuildManager {
         buildDef,
         buildResult,
         `${buildDef.name} Build Failed 😭`,
-        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult}` : ''}</h3>
+        `<h3>Result: ${buildResult.result}${!!buildResult.previousResult ? ` (Previously: ${buildResult.previousResult})` : ''}</h3>
         <h4>See the attachment for a full build log.</h4>
         <h4>To see the most recent build log in a browser, go to <a href="${serverLinkUrl}">${serverLinkUrl}</a>.</h4>`
       );
