@@ -10,7 +10,7 @@ const io = socket(server);
 import * as fs from 'fs';
 import * as path from 'path';
 
-import "reflect-metadata";
+import 'reflect-metadata';
 import { Request, Response } from 'express';
 import { BuildManager } from './build-manager';
 import { BuildStatus } from './models';
@@ -19,13 +19,19 @@ import { IServerConfig } from './server-models';
 
 // settings
 const appName = 'BetterThanNothing CI';
-let serverConfig: any = {};
+let serverConfig: IServerConfig = {
+  port: 3000,
+  maxConcurrentBuilds: 3,
+  clientDir: 'client/dist'
+};
+
 try {
   let configPath = path.join(process.cwd(), 'serverConfig.json');
   serverConfig = <IServerConfig>JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
 } catch (error) {
-  console.log(`error loading configuration file '${serverConfig}'; using defaults`);
+  console.log(`error loading configuration file '${JSON.stringify(serverConfig, null, 2)}'; using defaults`);
 }
+
 serverConfig.port = serverConfig.port || 3000;
 serverConfig.definitionDir = serverConfig.definitionDir || path.join(process.cwd(), 'definitions');
 serverConfig.logDir = serverConfig.logDir || path.join(process.cwd(), 'logs');
@@ -34,7 +40,7 @@ serverConfig.maxConcurrentBuilds = serverConfig.maxConcurrentBuilds || 3;
 const buildMgr = new BuildManager(serverConfig);
 
 // http configuration
-app.use(express.static('..\\client\\dist\\client'));
+app.use(express.static(serverConfig.clientDir));
 
 app.get('/', (req: Request, res: Response) => {
   res.sendFile('index.html');

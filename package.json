@@ -4,9 +4,11 @@
   "description": "BetterThanNothing CI: a build system that's better than nothing! Provides a way for you to automate console commands in a folder (on a cron schedule) and view the output in a browser.",
   "main": "server/server.js",
   "scripts": {
-    "start": "cd server && tsc && node server.js",
-    "build": "cd client && ng build",
-    "prod": "cd client && ng build --prod"
+    "server-build": "cd server && tsc",
+    "server-start": "cd server && tsc && node server.js",
+    "client-start": "cd client && ng serve",
+    "client-dev": "cd client && ng build",
+    "client-prod": "cd client && ng build --prod"
   },
   "keywords": [
     "ci",
@@ -15,7 +17,7 @@
   "author": "Luke Zehrung",
   "license": "MIT",
   "dependencies": {
-    "@sendgrid/mail": "^6.3.1",    
+    "@sendgrid/mail": "^6.3.1",
     "cross-spawn": "^6.0.5",
     "express": "^4.16.3",
     "express-async-await": "^1.1.0",
