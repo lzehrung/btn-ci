@@ -32,8 +32,7 @@ To get it up and running, execute these commands from the root of the repository
 ```
 cd client
 npm install
-cd ..
-cd server
+cd ../server
 npm install
 cd ..
 npm run server-start
