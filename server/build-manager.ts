@@ -40,8 +40,8 @@ export class BuildManager {
   public maxConcurrentBuilds: number = 3;
 
   constructor(private serverConfig: IServerConfig) {
-    this.configDir = serverConfig.definitionDir;
-    this.logDir = serverConfig.logDir;
+    this.configDir = serverConfig.definitionDir || '';
+    this.logDir = serverConfig.logDir || '';
     this.maxConcurrentBuilds = serverConfig.maxConcurrentBuilds;
   }
 

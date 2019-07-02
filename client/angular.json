@@ -24,7 +24,7 @@
           },
           "configurations": {
             "production": {
-              "outputPath": "dist",
+              "outputPath": "../server/client",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

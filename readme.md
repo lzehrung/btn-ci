@@ -30,7 +30,12 @@ Since this was just hacked out over the course of a couple evenings, I'm going t
 To get it up and running, execute these commands from the root of the repository:
 
 ```
+cd client
 npm install
+cd ..
+cd server
+npm install
+cd ..
 npm run server-start
 ```
 

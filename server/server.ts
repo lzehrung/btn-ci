@@ -16,20 +16,18 @@ import { BuildManager } from './build-manager';
 import { BuildStatus } from './models';
 import { BuildSockets } from './build-sockets';
 import { IServerConfig } from './server-models';
+import defaultConfig from './serverConfig';
 
 // settings
 const appName = 'BetterThanNothing CI';
-let serverConfig: IServerConfig = {
-  port: 3000,
-  maxConcurrentBuilds: 3,
-  clientDir: 'client/dist'
-};
+let serverConfig: IServerConfig;
 
 try {
   let configPath = path.join(process.cwd(), 'serverConfig.json');
-  serverConfig = <IServerConfig>JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
+  serverConfig = <IServerConfig>JSON.parse(fs.readFileSync(configPath, 'utf8'));
 } catch (error) {
-  console.log(`error loading configuration file '${JSON.stringify(serverConfig, null, 2)}'; using defaults`);
+  console.log(`error loading configuration file; using defaults`);
+  serverConfig = defaultConfig;
 }
 
 serverConfig.port = serverConfig.port || 3000;
