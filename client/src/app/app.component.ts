@@ -2,11 +2,10 @@ import {
   BuildDefinitionDialogComponent,
   IDialogData
 } from './build-definition-dialog/build-definition-dialog.component';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IBuildInfo, BuildStatus, BuildResult, BuildManagerEvents, IWelcomeInfo } from '../../../server/models';
 import { BuildService } from 'src/app/build.service';
 import { Socket } from 'ngx-socket-io';
-import { OnDestroy } from '@angular/core/src/metadata/lifecycle_hooks';
 import { ViewChildren } from '@angular/core';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { QueryList } from '@angular/core';

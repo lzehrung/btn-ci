@@ -1,0 +1,7 @@
+{
+  "globalDependencies": {
+    "reflect-metadata": "registry:dt/reflect-metadata#0.0.0+20161005184000",
+    "socket.io": "registry:dt/socket.io#1.4.4+20170313110830",
+    "sqlite3": "registry:dt/sqlite3#2.2.3+20160724070935"
+  }
+}
